@@ -6,12 +6,15 @@ import {
   Calendar, 
   ChevronRight, 
   ClipboardList, 
+  Folder,
+  FileText,
   History, 
   Home, 
   Layers, 
   Package, 
   Settings, 
-  Users 
+  Users,
+  Lightbulb
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -55,19 +58,30 @@ const SideNav = () => {
         <nav className="space-y-1">
           <NavItem to="/" icon={<Home size={18} />} label="Dashboard" end />
           <NavItem to="/services" icon={<Package size={18} />} label="Services" />
-          <NavItem to="/clients" icon={<Users size={18} />} label="Clients" />
           <NavItem to="/projects" icon={<ClipboardList size={18} />} label="Projects" />
+          <NavItem to="/clients" icon={<Users size={18} />} label="Clients" />
         </nav>
       </div>
       
       <div className="px-3 py-2 mt-6">
         <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-          Tools
+          Creation Tools
         </div>
         <nav className="space-y-1">
+          <NavItem to="/ideas" icon={<Lightbulb size={18} />} label="Idea Generator" />
+          <NavItem to="/documents" icon={<FileText size={18} />} label="Document Generator" />
           <NavItem to="/chatbot" icon={<Bot size={18} />} label="AI Assistant" />
-          <NavItem to="/analytics" icon={<BarChart3 size={18} />} label="Analytics" />
+        </nav>
+      </div>
+      
+      <div className="px-3 py-2 mt-6">
+        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+          Management
+        </div>
+        <nav className="space-y-1">
+          <NavItem to="/folder" icon={<Folder size={18} />} label="Documents" />
           <NavItem to="/calendar" icon={<Calendar size={18} />} label="Calendar" />
+          <NavItem to="/analytics" icon={<BarChart3 size={18} />} label="Analytics" />
           <NavItem to="/history" icon={<History size={18} />} label="History" />
         </nav>
       </div>

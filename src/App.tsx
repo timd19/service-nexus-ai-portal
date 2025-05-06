@@ -8,6 +8,10 @@ import ChatbotPage from "./pages/ChatbotPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ServicesPage from "./pages/ServicesPage";
+import IdeaGeneratorPage from "./pages/IdeaGeneratorPage";
+import DocumentGeneratorPage from "./pages/DocumentGeneratorPage";
+import CalendarPage from "./pages/CalendarPage";
+import ProjectsPage from "./pages/ProjectsPage";
 
 const queryClient = new QueryClient();
 
@@ -22,12 +26,14 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/chatbot" element={<ChatbotPage />} />
             <Route path="/services" element={<ServicesPage />} />
+            <Route path="/ideas" element={<IdeaGeneratorPage />} />
+            <Route path="/documents" element={<DocumentGeneratorPage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/projects" element={<ProjectsPage />} />
             {/* Other pages will be added here as they are implemented */}
             {/* <Route path="/services/:id" element={<ServiceDetailPage />} />
             <Route path="/clients" element={<ClientsPage />} />
-            <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
-            <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/settings" element={<SettingsPage />} /> */}
           </Route>
