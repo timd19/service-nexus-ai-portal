@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import MainLayout from "./components/layout/MainLayout";
+import ChatbotPage from "./pages/ChatbotPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -15,8 +17,19 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<Index />} />
+            <Route path="/chatbot" element={<ChatbotPage />} />
+            {/* Other pages will be added here as they are implemented */}
+            {/* <Route path="/services" element={<ServicesPage />} />
+            <Route path="/services/:id" element={<ServiceDetailPage />} />
+            <Route path="/clients" element={<ClientsPage />} />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/history" element={<HistoryPage />} />
+            <Route path="/settings" element={<SettingsPage />} /> */}
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
