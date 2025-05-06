@@ -7,6 +7,7 @@ import MainLayout from "./components/layout/MainLayout";
 import ChatbotPage from "./pages/ChatbotPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import ServicesPage from "./pages/ServicesPage";
 
 const queryClient = new QueryClient();
 
@@ -20,9 +21,9 @@ const App = () => (
           <Route element={<MainLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/chatbot" element={<ChatbotPage />} />
+            <Route path="/services" element={<ServicesPage />} />
             {/* Other pages will be added here as they are implemented */}
-            {/* <Route path="/services" element={<ServicesPage />} />
-            <Route path="/services/:id" element={<ServiceDetailPage />} />
+            {/* <Route path="/services/:id" element={<ServiceDetailPage />} />
             <Route path="/clients" element={<ClientsPage />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
