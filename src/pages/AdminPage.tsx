@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,7 +69,10 @@ const AdminPage = () => {
     
     // Update Azure OpenAI settings in context with required fields
     updateAzureSettings({
-      ...values  // This already contains the required fields
+      apiKey: values.apiKey,
+      endpoint: values.endpoint,
+      deploymentName: values.deploymentName,
+      apiVersion: values.apiVersion
     });
     
     toast({
