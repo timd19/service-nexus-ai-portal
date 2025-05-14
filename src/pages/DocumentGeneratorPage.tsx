@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { FileText, Send, Plus, Save } from "lucide-react";
+import { FileText, Send, Plus, Save, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,10 @@ import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
+import { Bot, User } from "lucide-react";
 
 interface Document {
   id: number;
@@ -15,6 +19,14 @@ interface Document {
   content: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+interface ChatMessage {
+  id: string;
+  content: string;
+  sender: "user" | "ai";
+  timestamp: Date;
+  suggestions?: string;
 }
 
 const DocumentGeneratorPage = () => {
@@ -31,6 +43,10 @@ const DocumentGeneratorPage = () => {
   const [newTitle, setNewTitle] = useState("");
   const [prompt, setPrompt] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [chatMessage, setChatMessage] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState<string | null>(null);
   const { toast } = useToast();
   
   const handleNewDocument = () => {
@@ -106,6 +122,65 @@ The AI would analyze your existing document and prompt to generate appropriate c
       description: "AI has added content to your document based on your prompt."
     });
   };
+
+  const handleSendChatMessage = async () => {
+    if (!chatMessage.trim() || !activeDocument) return;
+
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      content: chatMessage,
+      sender: "user",
+      timestamp: new Date()
+    };
+
+    setChatMessages(prev => [...prev, userMessage]);
+    setChatMessage("");
+    setIsChatLoading(true);
+
+    // Simulate AI response
+    setTimeout(() => {
+      const aiResponse: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: `I've analyzed your document on "${activeDocument.title}" and have some suggestions.`,
+        sender: "ai",
+        timestamp: new Date(),
+        suggestions: `# Suggested Improvements for ${activeDocument.title}
+
+## Additional Security Considerations
+- Implement data encryption at rest and in transit
+- Establish regular security auditing procedures
+- Create an incident response plan
+
+## Documentation Enhancements
+- Add a section on compliance requirements
+- Include diagrams for key security architectures
+- Provide implementation examples for each best practice`
+      };
+
+      setChatMessages(prev => [...prev, aiResponse]);
+      setActiveSuggestion(aiResponse.suggestions || null);
+      setIsChatLoading(false);
+    }, 1500);
+  };
+
+  const handleAddSuggestions = () => {
+    if (!activeDocument || !activeSuggestion) return;
+
+    const updatedContent = activeDocument.content + "\n\n" + activeSuggestion;
+    
+    setActiveDocument({
+      ...activeDocument,
+      content: updatedContent,
+      updatedAt: new Date()
+    });
+
+    setActiveSuggestion(null);
+    
+    toast({
+      title: "Suggestions added",
+      description: "AI suggestions have been added to your document."
+    });
+  };
   
   return (
     <div className="space-y-6">
@@ -168,57 +243,171 @@ The AI would analyze your existing document and prompt to generate appropriate c
               </CardContent>
             </Card>
           ) : (
-            <>
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">{activeDocument.title}</h2>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline"
-                    onClick={() => setActiveDocument(null)}
-                  >
-                    Close
-                  </Button>
-                  <Button 
-                    onClick={handleSaveDocument} 
-                    disabled={isSaving}
-                  >
-                    <Save className="mr-2 h-4 w-4" />
-                    {isSaving ? "Saving..." : "Save"}
-                  </Button>
-                </div>
-              </div>
-              
-              <Textarea
-                className="min-h-[300px] font-mono text-sm"
-                value={activeDocument.content}
-                onChange={(e) => setActiveDocument({...activeDocument, content: e.target.value})}
-                placeholder="Start writing your document content here..."
-              />
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">AI Assistant</CardTitle>
-                  <CardDescription>
-                    Ask the AI to help you with your document
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold">{activeDocument.title}</h2>
                   <div className="flex items-center gap-2">
-                    <Input
-                      placeholder="E.g., Write a section about network security best practices..."
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                    />
                     <Button 
-                      onClick={handleSendPrompt}
-                      disabled={!prompt.trim()}
+                      variant="outline"
+                      onClick={() => setActiveDocument(null)}
                     >
-                      <Send className="h-4 w-4" />
+                      Close
+                    </Button>
+                    <Button 
+                      onClick={handleSaveDocument} 
+                      disabled={isSaving}
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      {isSaving ? "Saving..." : "Save"}
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-            </>
+                </div>
+                
+                <Textarea
+                  className="min-h-[500px] font-mono text-sm"
+                  value={activeDocument.content}
+                  onChange={(e) => setActiveDocument({...activeDocument, content: e.target.value})}
+                  placeholder="Start writing your document content here..."
+                />
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">AI Assistant</CardTitle>
+                    <CardDescription>
+                      Ask the AI to help you with your document
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder="E.g., Write a section about network security best practices..."
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                      />
+                      <Button 
+                        onClick={handleSendPrompt}
+                        disabled={!prompt.trim()}
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="space-y-4">
+                <Card className="h-full flex flex-col">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-md">
+                        <div className="flex items-center">
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                          Chat About Document
+                        </div>
+                      </CardTitle>
+                      {activeSuggestion && (
+                        <Button 
+                          size="sm" 
+                          onClick={handleAddSuggestions}
+                          className="bg-nexus-500 hover:bg-nexus-600"
+                        >
+                          Add Suggestions
+                        </Button>
+                      )}
+                    </div>
+                    <CardDescription>
+                      Discuss your document with AI to get feedback and suggestions
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-col flex-1">
+                    <ScrollArea className="flex-1 h-[400px]">
+                      <div className="space-y-4 pr-4">
+                        {chatMessages.length === 0 ? (
+                          <div className="text-center text-muted-foreground py-8">
+                            <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                            <p>No messages yet. Start a conversation about the document.</p>
+                          </div>
+                        ) : (
+                          chatMessages.map((message) => (
+                            <div
+                              key={message.id}
+                              className={cn(
+                                "flex w-full items-start gap-2.5",
+                                message.sender === "user" && "flex-row-reverse"
+                              )}
+                            >
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src="" />
+                                <AvatarFallback className={message.sender === "ai" ? "bg-nexus-100" : "bg-gray-100"}>
+                                  {message.sender === "ai" ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div
+                                className={cn(
+                                  "rounded-lg p-3 max-w-[80%]",
+                                  message.sender === "user"
+                                    ? "bg-nexus-500 text-white"
+                                    : "bg-gray-100"
+                                )}
+                              >
+                                <p className="text-sm">{message.content}</p>
+                                {message.suggestions && (
+                                  <div className="mt-2 p-2 bg-white/80 rounded border text-xs font-mono overflow-auto max-h-[200px]">
+                                    <p className="font-medium mb-1">Suggestions Preview:</p>
+                                    <pre className="whitespace-pre-wrap text-xs">{message.suggestions.substring(0, 100)}...</pre>
+                                  </div>
+                                )}
+                                <p className="text-xs opacity-70 mt-1">
+                                  {message.timestamp.toLocaleTimeString()}
+                                </p>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                        {isChatLoading && (
+                          <div className="flex items-center">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="bg-nexus-100">
+                                <Bot className="h-4 w-4" />
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="ml-2 flex items-center space-x-2 bg-gray-100 p-3 rounded-lg">
+                              <div className="h-2 w-2 rounded-full bg-nexus-500 animate-bounce" style={{ animationDelay: "0ms" }} />
+                              <div className="h-2 w-2 rounded-full bg-nexus-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+                              <div className="h-2 w-2 rounded-full bg-nexus-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                    
+                    <div className="mt-4 flex items-center gap-2 pt-4 border-t">
+                      <Input
+                        placeholder="Ask about this document..."
+                        value={chatMessage}
+                        onChange={(e) => setChatMessage(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendChatMessage();
+                          }
+                        }}
+                        disabled={isChatLoading}
+                      />
+                      <Button
+                        size="icon"
+                        onClick={handleSendChatMessage}
+                        disabled={!chatMessage.trim() || isChatLoading}
+                        className="bg-nexus-500 hover:bg-nexus-600"
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           )}
         </TabsContent>
         
@@ -257,3 +446,4 @@ The AI would analyze your existing document and prompt to generate appropriate c
 };
 
 export default DocumentGeneratorPage;
+

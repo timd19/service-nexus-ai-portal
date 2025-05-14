@@ -87,7 +87,7 @@ const SideNav = () => {
       </div>
       
       <div className="mt-auto px-3 py-4">
-        <NavItem to="/settings" icon={<Settings size={18} />} label="Settings" />
+        <NavItem to="/admin" icon={<Settings size={18} />} label="Admin Settings" />
       </div>
       
       <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-800">

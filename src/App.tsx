@@ -12,6 +12,7 @@ import IdeaGeneratorPage from "./pages/IdeaGeneratorPage";
 import DocumentGeneratorPage from "./pages/DocumentGeneratorPage";
 import CalendarPage from "./pages/CalendarPage";
 import ProjectsPage from "./pages/ProjectsPage";
+import AdminPage from "./pages/AdminPage";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/documents" element={<DocumentGeneratorPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/admin" element={<AdminPage />} />
             {/* Other pages will be added here as they are implemented */}
             {/* <Route path="/services/:id" element={<ServiceDetailPage />} />
             <Route path="/clients" element={<ClientsPage />} />
