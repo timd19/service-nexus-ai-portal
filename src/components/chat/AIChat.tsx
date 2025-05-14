@@ -1,12 +1,12 @@
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Bot, SendIcon, User } from "lucide-react";
 import { useState } from "react";
+import { useAzureOpenAI } from "@/contexts/AzureOpenAIContext";
+import { callAzureOpenAI } from "@/services/azureOpenAIService";
+import { useToast } from "@/components/ui/use-toast";
 
 type Message = {
   id: string;
@@ -29,8 +29,10 @@ const AIChat = () => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { settings } = useAzureOpenAI();
+  const { toast } = useToast();
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!input.trim()) return;
 
     // Add user message
@@ -45,18 +47,52 @@ const AIChat = () => {
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response after a short delay
-    setTimeout(() => {
+    try {
+      // Format messages for OpenAI API
+      const apiMessages = [
+        {
+          role: "system",
+          content: "You are a service management AI assistant for Service Nexus, helping with managed service offerings lifecycle and operations."
+        },
+        ...messages.map(msg => ({
+          role: msg.type === "user" ? "user" : "assistant",
+          content: msg.content
+        } as const)),
+        {
+          role: "user",
+          content: input
+        }
+      ];
+
+      const response = await callAzureOpenAI(apiMessages, settings);
+      
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "ai",
-        content: `I understand you're asking about "${input}". This is a simulated response. In a real implementation, I would connect to Azure OpenAI to provide a helpful answer.`,
+        content: response,
         timestamp: new Date(),
       };
       
       setMessages((prev) => [...prev, aiMessage]);
+    } catch (error) {
+      console.error("Error in AI chat:", error);
+      toast({
+        title: "Error",
+        description: "Failed to get a response from AI assistant. Check your Azure OpenAI configuration.",
+        variant: "destructive"
+      });
+
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: "ai",
+        content: "I'm having trouble connecting to the AI service. Please check your Azure OpenAI configuration in the Admin settings.",
+        timestamp: new Date(),
+      };
+      
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -144,7 +180,9 @@ const AIChat = () => {
           </Button>
         </div>
         <p className="text-xs text-gray-500 mt-2">
-          Powered by Azure OpenAI. Your conversations may be stored for service improvement.
+          {settings.isConfigured 
+            ? "Powered by Azure OpenAI. Your conversations may be stored for service improvement." 
+            : "Azure OpenAI not configured. Please set up in Admin settings."}
         </p>
       </div>
     </div>

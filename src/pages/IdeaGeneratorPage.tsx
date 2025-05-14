@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { useAzureOpenAI } from "@/contexts/AzureOpenAIContext";
+import { callAzureOpenAI } from "@/services/azureOpenAIService";
 
 interface Idea {
   id: number;
@@ -35,6 +36,7 @@ const IdeaGeneratorPage = () => {
     }
   ]);
   const { toast } = useToast();
+  const { settings } = useAzureOpenAI();
   
   const handleGenerateIdea = async () => {
     if (!prompt.trim()) {
@@ -46,18 +48,53 @@ const IdeaGeneratorPage = () => {
       return;
     }
     
+    if (!settings.isConfigured) {
+      toast({
+        title: "Azure OpenAI not configured",
+        description: "Please configure Azure OpenAI settings in the Admin page",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsGenerating(true);
     
     try {
-      // In a real implementation, this would call the Azure OpenAI API
-      // For now, we're simulating a response
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const messages = [
+        {
+          role: "system",
+          content: "You are a creative AI assistant for Service Nexus, focused on generating managed service business ideas. Format your response in JSON format with title (string), description (string), and category (string) fields only, without any other text."
+        },
+        {
+          role: "user",
+          content: `Generate a new managed service business idea based on this prompt: ${prompt}`
+        }
+      ];
+      
+      const response = await callAzureOpenAI(messages, settings);
+      
+      // Parse the JSON response
+      let ideaData;
+      try {
+        // Extract JSON if the response includes other text
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        const jsonString = jsonMatch ? jsonMatch[0] : response;
+        ideaData = JSON.parse(jsonString);
+      } catch (parseError) {
+        console.error("Failed to parse AI response as JSON:", parseError);
+        // Create a fallback idea if parsing fails
+        ideaData = {
+          title: `AI-Generated Idea from: ${prompt.substring(0, 30)}...`,
+          description: response,
+          category: "AI Generated"
+        };
+      }
       
       const newIdea: Idea = {
-        id: ideas.length + 1,
-        title: `AI-Generated Idea for: ${prompt.substring(0, 30)}...`,
-        description: `This would be an AI-generated idea based on prompt: "${prompt}". In a real implementation, this would use Azure OpenAI to generate creative ideas for new services or improvements.`,
-        category: "AI Generated",
+        id: Date.now(),
+        title: ideaData.title || `New idea from: ${prompt.substring(0, 30)}...`,
+        description: ideaData.description || response,
+        category: ideaData.category || "AI Generated",
         createdAt: new Date()
       };
       
@@ -69,9 +106,10 @@ const IdeaGeneratorPage = () => {
         description: "A new service idea has been added to your collection.",
       });
     } catch (error) {
+      console.error("Error generating idea:", error);
       toast({
         title: "Error generating idea",
-        description: "There was an error connecting to the AI service. Please try again later.",
+        description: "There was an error connecting to the AI service. Please check your Azure OpenAI configuration.",
         variant: "destructive"
       });
     } finally {
@@ -114,6 +152,11 @@ const IdeaGeneratorPage = () => {
           >
             {isGenerating ? "Generating..." : "Generate Ideas"}
           </Button>
+          {!settings.isConfigured && (
+            <p className="ml-3 text-amber-600 text-sm">
+              Azure OpenAI not configured. Please set up in Admin settings.
+            </p>
+          )}
         </CardFooter>
       </Card>
       

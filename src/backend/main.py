@@ -33,15 +33,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure Azure OpenAI
-try:
-    openai.api_key = os.getenv("AZURE_OPENAI_API_KEY")
-    openai.api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2023-05-15")
-    openai.api_base = os.getenv("AZURE_OPENAI_ENDPOINT")
-    openai_deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
-except Exception as e:
-    print(f"Failed to configure Azure OpenAI: {e}")
-
 # Dependency to get database session
 def get_db():
     db = SessionLocal()
@@ -102,22 +93,34 @@ def read_client(client_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Client not found")
     return client
 
-# AI Chat endpoint
+# AI Chat endpoint with dynamic Azure OpenAI configuration
 @app.post("/chat/", response_model=schemas.ChatResponse)
 async def chat_with_ai(chat_request: schemas.ChatRequest):
     try:
+        # Get Azure OpenAI configuration from request
+        api_key = chat_request.api_key
+        endpoint = chat_request.endpoint
+        deployment_name = chat_request.deployment_name
+        api_version = chat_request.api_version or "2023-05-15"
+        
         messages = [
             {"role": "system", "content": "You are a service management AI assistant for Service Nexus, helping with managed service offerings lifecycle and operations."},
             {"role": "user", "content": chat_request.message}
         ]
 
-        # Check if Azure OpenAI is properly configured
-        if not openai.api_key or not openai.api_base or not openai_deployment_name:
-            return {"response": "AI assistant is not configured. Please set up Azure OpenAI credentials in the .env file."}
+        # Check if Azure OpenAI config is provided
+        if not api_key or not endpoint or not deployment_name:
+            return {"response": "AI assistant is not configured. Please provide Azure OpenAI credentials."}
+
+        # Configure Azure OpenAI client
+        openai.api_type = "azure"
+        openai.api_key = api_key
+        openai.api_base = endpoint
+        openai.api_version = api_version
 
         # Make the API call to Azure OpenAI
         response = openai.ChatCompletion.create(
-            engine=openai_deployment_name,
+            engine=deployment_name,
             messages=messages,
             max_tokens=800,
             temperature=0.7,

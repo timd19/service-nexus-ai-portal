@@ -1,17 +1,16 @@
-
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { Settings, CircleCheck, Save, Bot, GitBranch, LayoutDashboard } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useAzureOpenAI } from "@/contexts/AzureOpenAIContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const azureOpenAISchema = z.object({
   apiKey: z.string().min(1, { message: "API Key is required" }),
@@ -35,14 +34,15 @@ const githubSchema = z.object({
 const AdminPage = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("azure-openai");
+  const { settings: azureSettings, updateSettings: updateAzureSettings } = useAzureOpenAI();
 
   const azureOpenAIForm = useForm<z.infer<typeof azureOpenAISchema>>({
     resolver: zodResolver(azureOpenAISchema),
     defaultValues: {
-      apiKey: "",
-      endpoint: "https://",
-      deploymentName: "",
-      apiVersion: "2023-05-15"
+      apiKey: azureSettings.apiKey || "",
+      endpoint: azureSettings.endpoint || "https://",
+      deploymentName: azureSettings.deploymentName || "",
+      apiVersion: azureSettings.apiVersion || "2023-05-15"
     }
   });
 
@@ -67,8 +67,11 @@ const AdminPage = () => {
   const handleSubmitAzureOpenAI = (values: z.infer<typeof azureOpenAISchema>) => {
     console.log("Azure OpenAI Settings:", values);
     
-    // In a real implementation, you would store these settings
-    // in a secure location like a database or encrypted storage
+    // Update Azure OpenAI settings in context
+    updateAzureSettings({
+      ...values,
+      isConfigured: true
+    });
     
     toast({
       title: "Settings saved",
@@ -199,6 +202,13 @@ const AdminPage = () => {
                     <Save className="mr-2 h-4 w-4" /> 
                     Save Azure OpenAI Settings
                   </Button>
+
+                  {azureSettings.isConfigured && (
+                    <div className="flex items-center gap-2 p-3 bg-green-50 text-green-700 rounded-md mt-2">
+                      <CircleCheck className="h-5 w-5" />
+                      <span>Azure OpenAI is configured and ready to use</span>
+                    </div>
+                  )}
                 </form>
               </Form>
             </CardContent>

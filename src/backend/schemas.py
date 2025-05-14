@@ -1,34 +1,15 @@
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
-from models import ServiceStatus, ServiceHealth, ActivityType
 
-# Client schemas
-class ClientBase(BaseModel):
-    name: str
-    contact_name: Optional[str] = None
-    contact_email: Optional[str] = None
-    contact_phone: Optional[str] = None
-
-class ClientCreate(ClientBase):
-    pass
-
-class Client(ClientBase):
-    id: int
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-    class Config:
-        orm_mode = True
-
-# Service schemas
+# Base models for common fields
 class ServiceBase(BaseModel):
     name: str
     description: Optional[str] = None
-    status: ServiceStatus = ServiceStatus.PLANNING
-    health: ServiceHealth = ServiceHealth.INACTIVE
-    client_id: int
+    type: str
+    status: str = "active"
+    monthly_cost: float
 
 class ServiceCreate(ServiceBase):
     pass
@@ -36,52 +17,43 @@ class ServiceCreate(ServiceBase):
 class ServiceUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
-    status: Optional[ServiceStatus] = None
-    health: Optional[ServiceHealth] = None
-    client_id: Optional[int] = None
+    type: Optional[str] = None
+    status: Optional[str] = None
+    monthly_cost: Optional[float] = None
 
 class Service(ServiceBase):
     id: int
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime
 
     class Config:
         orm_mode = True
 
-# Activity schemas
-class ActivityBase(BaseModel):
-    activity_type: ActivityType
-    description: Optional[str] = None
-    service_id: int
-    user_name: Optional[str] = None
+# Client models
+class ClientBase(BaseModel):
+    name: str
+    email: str
+    company: str
+    status: str = "active"
 
-class ActivityCreate(ActivityBase):
+class ClientCreate(ClientBase):
     pass
 
-class Activity(ActivityBase):
+class Client(ClientBase):
     id: int
-    timestamp: datetime
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         orm_mode = True
 
-# Service with activities
-class ServiceWithActivities(Service):
-    activities: List[Activity] = []
-
-    class Config:
-        orm_mode = True
-
-# Client with services
-class ClientWithServices(Client):
-    services: List[Service] = []
-
-    class Config:
-        orm_mode = True
-
-# AI Chat schemas
+# Chat models
 class ChatRequest(BaseModel):
     message: str
+    api_key: Optional[str] = None
+    endpoint: Optional[str] = None
+    deployment_name: Optional[str] = None
+    api_version: Optional[str] = None
 
 class ChatResponse(BaseModel):
     response: str
