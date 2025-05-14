@@ -1,3 +1,4 @@
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,7 @@ import { useState } from "react";
 import { useAzureOpenAI } from "@/contexts/AzureOpenAIContext";
 import { callAzureOpenAI } from "@/services/azureOpenAIService";
 import { useToast } from "@/components/ui/use-toast";
+import { ChatMessage } from "@/types/chatTypes";
 
 type Message = {
   id: string;
@@ -49,7 +51,7 @@ const AIChat = () => {
 
     try {
       // Format messages for OpenAI API
-      const apiMessages = [
+      const apiMessages: ChatMessage[] = [
         {
           role: "system",
           content: "You are a service management AI assistant for Service Nexus, helping with managed service offerings lifecycle and operations."
@@ -57,7 +59,7 @@ const AIChat = () => {
         ...messages.map(msg => ({
           role: msg.type === "user" ? "user" : "assistant",
           content: msg.content
-        } as const)),
+        })),
         {
           role: "user",
           content: input

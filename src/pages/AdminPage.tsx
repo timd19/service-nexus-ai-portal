@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,10 +68,9 @@ const AdminPage = () => {
   const handleSubmitAzureOpenAI = (values: z.infer<typeof azureOpenAISchema>) => {
     console.log("Azure OpenAI Settings:", values);
     
-    // Update Azure OpenAI settings in context
+    // Update Azure OpenAI settings in context with required fields
     updateAzureSettings({
-      ...values,
-      isConfigured: true
+      ...values  // This already contains the required fields
     });
     
     toast({

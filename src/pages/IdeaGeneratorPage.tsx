@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useAzureOpenAI } from "@/contexts/AzureOpenAIContext";
 import { callAzureOpenAI } from "@/services/azureOpenAIService";
+import { ChatMessage } from "@/types/chatTypes";
 
 interface Idea {
   id: number;
@@ -60,7 +62,7 @@ const IdeaGeneratorPage = () => {
     setIsGenerating(true);
     
     try {
-      const messages = [
+      const messages: ChatMessage[] = [
         {
           role: "system",
           content: "You are a creative AI assistant for Service Nexus, focused on generating managed service business ideas. Format your response in JSON format with title (string), description (string), and category (string) fields only, without any other text."

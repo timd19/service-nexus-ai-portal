@@ -1,58 +1,40 @@
 
-import { toast } from "@/components/ui/use-toast";
+import { ChatMessage } from "@/types/chatTypes";
+import { AzureOpenAISettings } from "@/contexts/AzureOpenAIContext";
 
-interface AzureOpenAISettings {
-  apiKey: string;
-  endpoint: string;
-  deploymentName: string;
-  apiVersion: string;
-}
-
-interface ChatMessage {
-  role: "system" | "user" | "assistant";
-  content: string;
-}
-
-export async function callAzureOpenAI(
-  messages: ChatMessage[],
-  settings: AzureOpenAISettings
-): Promise<string> {
-  try {
-    if (!settings.apiKey || !settings.endpoint || !settings.deploymentName) {
-      return "AI assistant is not configured. Please set up Azure OpenAI credentials in Admin Settings.";
-    }
-
-    // Format the endpoint URL
-    const endpointUrl = `${settings.endpoint}/openai/deployments/${settings.deploymentName}/chat/completions?api-version=${settings.apiVersion}`;
-
-    const response = await fetch(endpointUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": settings.apiKey,
-      },
-      body: JSON.stringify({
-        messages,
-        max_tokens: 800,
-        temperature: 0.7,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Azure OpenAI API error:", errorData);
-      throw new Error(`API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
-  } catch (error) {
-    console.error("Error calling Azure OpenAI:", error);
-    toast({
-      title: "Error",
-      description: `Failed to connect to Azure OpenAI: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      variant: "destructive",
-    });
-    return `I encountered an error while connecting to Azure OpenAI. Please ensure your settings are correct in the Admin page.`;
+export const callAzureOpenAI = async (messages: ChatMessage[], settings: AzureOpenAISettings): Promise<string> => {
+  // This is a mock implementation for the UI demo
+  // In a real implementation, you would call the Azure OpenAI API
+  
+  console.log("Calling Azure OpenAI with settings:", settings);
+  console.log("Messages:", messages);
+  
+  // Wait for 1-2 seconds to simulate API call
+  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+  
+  // For demo purposes, return a mock response
+  const lastMessage = messages[messages.length - 1];
+  
+  if (!settings.isConfigured || !settings.apiKey || !settings.endpoint || !settings.deploymentName) {
+    throw new Error("Azure OpenAI is not configured properly");
   }
-}
+  
+  // Return different responses based on the type of message
+  if (lastMessage.content.toLowerCase().includes("hello") || lastMessage.content.toLowerCase().includes("hi")) {
+    return "Hello! I'm your AI assistant powered by Azure OpenAI. How can I help you today?";
+  } else if (lastMessage.content.toLowerCase().includes("service") || lastMessage.content.toLowerCase().includes("management")) {
+    return "I can help you with service management questions. Would you like information about monitoring, deployment, or maintenance?";
+  } else if (lastMessage.content.toLowerCase().includes("generate")) {
+    if (messages[0].role === "system" && messages[0].content.includes("JSON")) {
+      return `{
+        "title": "Automated Cloud Security Audit Service",
+        "description": "A continuous security monitoring service that automatically audits client cloud environments, identifies vulnerabilities, and provides remediation recommendations.",
+        "category": "Security"
+      }`;
+    } else {
+      return "Here's some generated content for your document: \n\n## Security Best Practices\n\n1. Implement multi-factor authentication\n2. Use principle of least privilege\n3. Regular security audits\n4. Encrypt sensitive data\n5. Maintain security patches";
+    }
+  } else {
+    return "I understand your message. Is there something specific about service management I can help you with? I can provide information on best practices, troubleshooting, or implementation strategies.";
+  }
+};

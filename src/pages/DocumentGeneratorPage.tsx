@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { Bot, User } from "lucide-react";
 import { useAzureOpenAI } from "@/contexts/AzureOpenAIContext";
 import { callAzureOpenAI } from "@/services/azureOpenAIService";
+import { ChatMessage as ApiChatMessage } from "@/types/chatTypes";
+import { Document, ChatMessage } from "@/types/documentTypes";
 
 interface Document {
   id: number;
@@ -107,7 +109,7 @@ const DocumentGeneratorPage = () => {
     }
     
     try {
-      const messages = [
+      const messages: ApiChatMessage[] = [
         {
           role: "system",
           content: "You are a professional technical writer AI assistant. Generate well-structured content based on the user's prompt that can be added to their document."
@@ -168,7 +170,7 @@ const DocumentGeneratorPage = () => {
     setIsChatLoading(true);
 
     try {
-      const messages = [
+      const messages: ApiChatMessage[] = [
         {
           role: "system",
           content: "You are a professional technical documentation assistant. Analyze the user's document and their question, then provide helpful suggestions for improving the document. Format your response in two parts: 1) A conversational response addressing their question, and 2) A markdown formatted list of specific suggestions to improve the document that can be directly added to the document."

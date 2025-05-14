@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
-interface AzureOpenAISettings {
+export interface AzureOpenAISettings {
   apiKey: string;
   endpoint: string;
   deploymentName: string;
@@ -11,7 +11,7 @@ interface AzureOpenAISettings {
 
 interface AzureOpenAIContextType {
   settings: AzureOpenAISettings;
-  updateSettings: (settings: AzureOpenAISettings) => void;
+  updateSettings: (settings: Partial<AzureOpenAISettings> & { apiKey: string; endpoint: string; deploymentName: string }) => void;
 }
 
 const defaultSettings: AzureOpenAISettings = {
@@ -35,6 +35,7 @@ export const AzureOpenAIProvider = ({ children }: { children: ReactNode }) => {
     if (savedSettings) {
       const parsed = JSON.parse(savedSettings);
       return {
+        ...defaultSettings,
         ...parsed,
         isConfigured: !!(parsed.apiKey && parsed.endpoint && parsed.deploymentName)
       };
@@ -46,9 +47,13 @@ export const AzureOpenAIProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem("azureOpenAISettings", JSON.stringify(settings));
   }, [settings]);
 
-  const updateSettings = (newSettings: AzureOpenAISettings) => {
+  const updateSettings = (newSettings: Partial<AzureOpenAISettings> & { apiKey: string; endpoint: string; deploymentName: string }) => {
     const isConfigured = !!(newSettings.apiKey && newSettings.endpoint && newSettings.deploymentName);
-    setSettings({ ...newSettings, isConfigured });
+    setSettings({ 
+      ...settings,
+      ...newSettings, 
+      isConfigured 
+    });
   };
 
   return (
