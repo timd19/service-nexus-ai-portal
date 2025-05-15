@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ChatMessage, ChatSession } from "@/types/chatTypes";
 import { useToast } from "@/hooks/use-toast";
 
@@ -48,6 +48,11 @@ export const useChatSessions = () => {
   const [newChatTitle, setNewChatTitle] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const { toast } = useToast();
+  
+  // Use a ref to track if we're currently updating from messages to prevent infinite loops
+  const isUpdatingFromMessages = useRef(false);
+  // Use a ref to track if we need to update chat sessions after messages change
+  const needsSessionUpdate = useRef(false);
 
   // Save sessions to localStorage whenever they change
   useEffect(() => {
@@ -56,6 +61,9 @@ export const useChatSessions = () => {
 
   // Load messages for active chat session
   useEffect(() => {
+    // Skip if we're in the middle of updating from messages to chat sessions
+    if (isUpdatingFromMessages.current) return;
+    
     const activeSession = chatSessions.find(s => s.id === activeChatId);
     if (activeSession && activeSession.messages.length > 0) {
       // Convert session messages to the local Message format
@@ -124,6 +132,9 @@ export const useChatSessions = () => {
   
   // Update chat sessions with new messages
   const updateChatSessionWithMessages = (userMessage: Message, aiMessage: Message) => {
+    // Set the flag to indicate we're updating from messages
+    isUpdatingFromMessages.current = true;
+    
     setChatSessions(prev => prev.map(session => {
       if (session.id === activeChatId) {
         // Convert local messages to ChatMessage format for storage
@@ -144,10 +155,18 @@ export const useChatSessions = () => {
       }
       return session;
     }));
+    
+    // Reset the flag after the update
+    setTimeout(() => {
+      isUpdatingFromMessages.current = false;
+    }, 0);
   };
 
-  // Update chat sessions with current messages (for edits and resends)
+  // Manual function to update chat sessions with current messages (for edits and resends)
   const updateChatSessionMessages = () => {
+    // Set the flag to indicate we're updating from messages
+    isUpdatingFromMessages.current = true;
+    
     setChatSessions(prev => prev.map(session => {
       if (session.id === activeChatId) {
         // Convert local messages to ChatMessage format for storage
@@ -173,14 +192,27 @@ export const useChatSessions = () => {
       }
       return session;
     }));
+    
+    // Reset the flag after the update
+    setTimeout(() => {
+      isUpdatingFromMessages.current = false;
+    }, 0);
   };
 
-  // Update chat sessions whenever messages change
+  // Mark that we need to update sessions when messages change
   useEffect(() => {
-    if (messages.length > 1) { // Only update if we have more than just the initial message
-      updateChatSessionMessages();
+    if (messages.length > 1 && !isUpdatingFromMessages.current) {
+      needsSessionUpdate.current = true;
     }
   }, [messages]);
+
+  // Perform the actual update in a separate effect to avoid infinite loops
+  useEffect(() => {
+    if (needsSessionUpdate.current && !isUpdatingFromMessages.current) {
+      needsSessionUpdate.current = false;
+      updateChatSessionMessages();
+    }
+  });
 
   return {
     chatSessions,
