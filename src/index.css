@@ -1,7 +1,9 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -96,9 +98,6 @@
   }
 }
 
-/* Import Inter font */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 /* Custom utilities */
 @layer components {
   .nexus-card {
@@ -116,4 +115,66 @@
   .stat-card {
     @apply p-6 rounded-lg border border-gray-100 bg-white shadow-sm hover:shadow transition-shadow duration-200;
   }
+  
+  /* Markdown styling for chat messages */
+  .prose {
+    @apply text-inherit;
+  }
+  
+  .prose h1 {
+    @apply text-xl font-bold mt-4 mb-2;
+  }
+  
+  .prose h2 {
+    @apply text-lg font-bold mt-3 mb-2;
+  }
+  
+  .prose h3 {
+    @apply text-base font-bold mt-3 mb-1;
+  }
+  
+  .prose p {
+    @apply my-2;
+  }
+  
+  .prose ul {
+    @apply list-disc pl-5 my-2;
+  }
+  
+  .prose ol {
+    @apply list-decimal pl-5 my-2;
+  }
+  
+  .prose li {
+    @apply my-1;
+  }
+  
+  .prose code {
+    @apply px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-sm;
+  }
+  
+  .prose pre {
+    @apply p-3 bg-gray-200 dark:bg-gray-700 rounded my-3 overflow-x-auto;
+  }
+  
+  .prose pre code {
+    @apply bg-transparent p-0;
+  }
+  
+  .prose blockquote {
+    @apply pl-4 border-l-4 border-gray-300 dark:border-gray-600 italic my-3;
+  }
+  
+  .prose a {
+    @apply text-nexus-500 hover:underline;
+  }
+  
+  .dark .prose {
+    @apply text-inherit;
+  }
+  
+  .dark .prose a {
+    @apply text-nexus-400;
+  }
 }
+
