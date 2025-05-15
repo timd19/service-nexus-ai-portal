@@ -71,7 +71,7 @@ export const callAzureOpenAI = async (messages: ChatMessage[], settings: AzureOp
       body: JSON.stringify({
         messages: apiMessages,
         max_completion_tokens: 800,
-        temperature: 0.7
+        temperature: 1
       })
     });
     
