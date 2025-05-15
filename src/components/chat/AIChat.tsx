@@ -1,139 +1,37 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
-import { Bot, Clock, MessageSquare, Plus, Save, SendIcon, User, X } from "lucide-react";
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { useAzureOpenAI } from "@/contexts/AzureOpenAIContext";
 import { callAzureOpenAI, addDebugLog } from "@/services/azureOpenAIService";
-import { useToast } from "@/components/ui/use-toast";
-import { ChatMessage, ChatSession } from "@/types/chatTypes";
-import { Dropdown, DropdownTrigger, DropdownContent, DropdownItem } from "@/components/ui/dropdown-menu";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
-
-// Define Message type using the role values from ChatMessage
-type Message = {
-  id: string;
-  type: "user" | "ai";
-  content: string;
-  timestamp: Date;
-  contextSource?: string;
-};
-
-// Initial welcome message
-const initialMessages: Message[] = [
-  {
-    id: "1",
-    type: "ai",
-    content: "Hello! I'm your AI assistant. How can I help you manage your services today?",
-    timestamp: new Date(),
-  },
-];
-
-// Load chat sessions from localStorage or use default
-const loadChatSessions = (): ChatSession[] => {
-  const saved = localStorage.getItem("chatSessions");
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch (e) {
-      console.error("Failed to parse saved chat sessions", e);
-    }
-  }
-  // Default chat session
-  return [{
-    id: "default",
-    title: "New Conversation",
-    lastMessage: "Hello! I'm your AI assistant.",
-    timestamp: new Date(),
-    messages: []
-  }];
-};
+import { useToast } from "@/hooks/use-toast";
+import { ChatMessage } from "@/types/chatTypes";
+import ChatInput from "./ChatInput";
+import ChatMessage from "./ChatMessage";
+import ChatHistory from "./ChatHistory";
+import ChatControls from "./ChatControls";
+import { useChatSessions, Message } from "@/hooks/useChatSessions";
 
 const AIChat = () => {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [chatSessions, setChatSessions] = useState<ChatSession[]>(loadChatSessions);
-  const [activeChatId, setActiveChatId] = useState<string>(chatSessions[0]?.id || "default");
-  const [showHistory, setShowHistory] = useState(false);
-  const [newChatTitle, setNewChatTitle] = useState("");
   const { settings } = useAzureOpenAI();
   const { toast } = useToast();
-
-  // Save sessions to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem("chatSessions", JSON.stringify(chatSessions));
-  }, [chatSessions]);
-
-  // Load messages for active chat session
-  useEffect(() => {
-    const activeSession = chatSessions.find(s => s.id === activeChatId);
-    if (activeSession && activeSession.messages.length > 0) {
-      // Convert session messages to the local Message format
-      const loadedMessages = activeSession.messages.map(m => ({
-        id: m.timestamp ? new Date(m.timestamp).getTime().toString() : Date.now().toString(),
-        type: m.role === "user" ? "user" as const : "ai" as const,
-        content: m.content,
-        timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
-        contextSource: m.contextSource
-      }));
-      
-      setMessages(loadedMessages.length > 0 ? loadedMessages : initialMessages);
-    } else {
-      setMessages(initialMessages);
-    }
-  }, [activeChatId, chatSessions]);
   
-  // Create a new chat session
-  const createNewChat = () => {
-    const newId = Date.now().toString();
-    const newSession = {
-      id: newId,
-      title: "New Conversation",
-      lastMessage: "",
-      timestamp: new Date(),
-      messages: []
-    };
-    
-    setChatSessions(prev => [newSession, ...prev]);
-    setActiveChatId(newId);
-    setMessages(initialMessages);
-  };
-
-  // Save the current chat session
-  const saveCurrentChat = () => {
-    if (newChatTitle.trim()) {
-      setChatSessions(prev => prev.map(session => 
-        session.id === activeChatId 
-          ? { ...session, title: newChatTitle } 
-          : session
-      ));
-      setNewChatTitle("");
-      toast({
-        title: "Chat saved",
-        description: `Chat "${newChatTitle}" has been saved.`
-      });
-    }
-  };
-
-  // Switch to a different chat session
-  const switchChat = (sessionId: string) => {
-    setActiveChatId(sessionId);
-    setShowHistory(false);
-  };
-
-  // Delete a chat session
-  const deleteChat = (sessionId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setChatSessions(prev => prev.filter(s => s.id !== sessionId));
-    if (sessionId === activeChatId && chatSessions.length > 1) {
-      // Switch to another chat if we're deleting the active one
-      const newActiveId = chatSessions.find(s => s.id !== sessionId)?.id || "";
-      setActiveChatId(newActiveId);
-    }
-  };
+  const {
+    messages,
+    setMessages,
+    chatSessions,
+    activeChatId,
+    newChatTitle,
+    setNewChatTitle,
+    showHistory,
+    setShowHistory,
+    createNewChat,
+    saveCurrentChat,
+    switchChat,
+    deleteChat,
+    updateChatSessionWithMessages,
+    currentChatTitle
+  } = useChatSessions();
 
   const handleSendMessage = async () => {
     if (!input.trim()) return;
@@ -186,26 +84,7 @@ const AIChat = () => {
       setMessages((prev) => [...prev, aiMessage]);
 
       // Update chat sessions
-      setChatSessions(prev => prev.map(session => {
-        if (session.id === activeChatId) {
-          // Convert local messages to ChatMessage format for storage
-          const updatedMessages = [...messages, userMessage, aiMessage];
-          const sessionMessages: ChatMessage[] = updatedMessages.map(m => ({
-            role: m.type === "user" ? "user" : "assistant",
-            content: m.content,
-            timestamp: m.timestamp,
-            contextSource: m.contextSource
-          }));
-
-          return {
-            ...session,
-            lastMessage: input.slice(0, 50) + (input.length > 50 ? "..." : ""),
-            timestamp: new Date(),
-            messages: sessionMessages
-          };
-        }
-        return session;
-      }));
+      updateChatSessionWithMessages(userMessage, aiMessage);
 
     } catch (error) {
       addDebugLog("AIChat: Error in chat", error instanceof Error ? error.message : String(error));
@@ -229,86 +108,29 @@ const AIChat = () => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  // Get current chat title
-  const currentChatTitle = chatSessions.find(s => s.id === activeChatId)?.title || "New Conversation";
+  const toggleHistory = () => setShowHistory(!showHistory);
 
   return (
     <div className="flex flex-col h-full">
       {/* Chat Controls */}
-      <div className="border-b p-2 flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={createNewChat}>
-            <Plus className="h-4 w-4 mr-1" /> New Chat
-          </Button>
-          
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Save className="h-4 w-4 mr-1" /> Save Chat
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80">
-              <div className="space-y-2">
-                <h4 className="font-medium">Save current conversation</h4>
-                <Input 
-                  placeholder="Enter chat title" 
-                  value={newChatTitle} 
-                  onChange={(e) => setNewChatTitle(e.target.value)} 
-                />
-                <Button onClick={saveCurrentChat} disabled={!newChatTitle.trim()} className="w-full">
-                  Save
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
-        
-        <Button variant="ghost" size="sm" onClick={() => setShowHistory(!showHistory)}>
-          <Clock className="h-4 w-4 mr-1" /> Chat History
-        </Button>
-      </div>
+      <ChatControls 
+        createNewChat={createNewChat}
+        newChatTitle={newChatTitle}
+        setNewChatTitle={setNewChatTitle}
+        saveCurrentChat={saveCurrentChat}
+        toggleHistory={toggleHistory}
+        showHistory={showHistory}
+      />
       
       {/* Chat History Sidebar */}
       {showHistory && (
-        <div className="border-r w-64 absolute right-0 top-32 bottom-0 bg-white shadow-lg z-10">
-          <div className="p-3 border-b font-medium flex justify-between items-center">
-            <span>Chat History</span>
-            <Button variant="ghost" size="sm" onClick={() => setShowHistory(false)}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <ScrollArea className="h-[calc(100%-3rem)]">
-            <div className="p-2 space-y-2">
-              {chatSessions.map(session => (
-                <div 
-                  key={session.id}
-                  className={`p-2 rounded cursor-pointer flex justify-between ${session.id === activeChatId ? 'bg-nexus-100' : 'hover:bg-gray-100'}`}
-                  onClick={() => switchChat(session.id)}
-                >
-                  <div className="overflow-hidden">
-                    <div className="font-medium truncate">{session.title || "New Conversation"}</div>
-                    <div className="text-xs text-gray-500 truncate">{session.lastMessage || "No messages yet"}</div>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="opacity-50 hover:opacity-100"
-                    onClick={(e) => deleteChat(session.id, e)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
+        <ChatHistory
+          chatSessions={chatSessions}
+          activeChatId={activeChatId}
+          switchChat={switchChat}
+          deleteChat={deleteChat}
+          onClose={() => setShowHistory(false)}
+        />
       )}
       
       {/* Current Chat Title */}
@@ -320,55 +142,21 @@ const AIChat = () => {
       <div className="flex-1 overflow-y-auto pb-4">
         <div className="space-y-4 p-4">
           {messages.map((message) => (
-            <div
+            <ChatMessage
               key={message.id}
-              className={cn(
-                "flex w-max max-w-[80%] rounded-lg p-4",
-                message.type === "user"
-                  ? "ml-auto bg-nexus-500 text-white"
-                  : "bg-gray-100 dark:bg-gray-800"
-              )}
-            >
-              {message.type === "ai" && (
-                <Avatar className="h-8 w-8 mr-3 flex-shrink-0">
-                  <AvatarImage src="" />
-                  <AvatarFallback className="bg-nexus-100 text-nexus-600">
-                    <Bot size={16} />
-                  </AvatarFallback>
-                </Avatar>
-              )}
-              <div>
-                <p>{message.content}</p>
-                {message.contextSource && (
-                  <div className="mt-2 text-xs opacity-70 bg-gray-200 p-1 rounded">
-                    Source: {message.contextSource}
-                  </div>
-                )}
-                <p className="text-xs opacity-70 mt-1">
-                  {message.timestamp.toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </p>
-              </div>
-              {message.type === "user" && (
-                <Avatar className="h-8 w-8 ml-3 flex-shrink-0">
-                  <AvatarImage src="" />
-                  <AvatarFallback className="bg-white text-nexus-600">
-                    <User size={16} />
-                  </AvatarFallback>
-                </Avatar>
-              )}
-            </div>
+              id={message.id}
+              type={message.type}
+              content={message.content}
+              timestamp={message.timestamp}
+              contextSource={message.contextSource}
+            />
           ))}
           
           {isLoading && (
             <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 w-max rounded-lg p-4">
-              <Avatar className="h-8 w-8 mr-3 flex-shrink-0">
-                <AvatarFallback className="bg-nexus-100 text-nexus-600">
-                  <Bot size={16} />
-                </AvatarFallback>
-              </Avatar>
+              <div className="h-8 w-8 mr-3 flex-shrink-0 bg-nexus-100 text-nexus-600 rounded-full flex items-center justify-center">
+                <span className="text-xs">AI</span>
+              </div>
               <div className="flex space-x-2">
                 <div className="h-2 w-2 rounded-full bg-nexus-500 animate-bounce" style={{ animationDelay: "0ms" }} />
                 <div className="h-2 w-2 rounded-full bg-nexus-500 animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -380,30 +168,13 @@ const AIChat = () => {
       </div>
       
       {/* Input Area */}
-      <div className="border-t p-4">
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="Ask something about your services..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="flex-1"
-            disabled={isLoading}
-          />
-          <Button 
-            onClick={handleSendMessage} 
-            disabled={!input.trim() || isLoading}
-            className="bg-nexus-500 hover:bg-nexus-600"
-          >
-            <SendIcon className="h-4 w-4" />
-          </Button>
-        </div>
-        <p className="text-xs text-gray-500 mt-2">
-          {settings.isConfigured 
-            ? "Powered by Azure OpenAI. Your conversations may be stored for service improvement." 
-            : "Azure OpenAI not configured. Please set up in Admin settings."}
-        </p>
-      </div>
+      <ChatInput 
+        input={input}
+        setInput={setInput}
+        handleSendMessage={handleSendMessage}
+        isLoading={isLoading}
+        settings={settings}
+      />
     </div>
   );
 };
