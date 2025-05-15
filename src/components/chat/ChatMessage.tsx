@@ -33,9 +33,11 @@ const ChatMessage: FC<ChatMessageProps> = ({ id, type, content, timestamp, conte
       )}
       <div>
         {type === "ai" ? (
-          <ReactMarkdown className="prose dark:prose-invert max-w-none">
-            {content}
-          </ReactMarkdown>
+          <div className="prose dark:prose-invert max-w-none">
+            <ReactMarkdown>
+              {content}
+            </ReactMarkdown>
+          </div>
         ) : (
           <p>{content}</p>
         )}
