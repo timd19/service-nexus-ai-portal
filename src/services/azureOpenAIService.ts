@@ -1,4 +1,3 @@
-
 import { ChatMessage } from "@/types/chatTypes";
 import { AzureOpenAISettings } from "@/contexts/AzureOpenAIContext";
 
@@ -28,6 +27,117 @@ export const clearDebugLogs = (): void => {
   debugLogs = [];
 };
 
+// New streaming function for Azure OpenAI
+export const streamAzureOpenAI = async (
+  messages: ChatMessage[], 
+  settings: AzureOpenAISettings,
+  onChunk: (chunk: string) => void
+): Promise<void> => {
+  try {
+    addDebugLog("Streaming from Azure OpenAI with settings", {
+      endpoint: settings.endpoint,
+      deploymentName: settings.deploymentName,
+      apiVersion: settings.apiVersion,
+      isConfigured: settings.isConfigured
+    });
+    
+    // Check if Azure OpenAI is properly configured
+    if (!settings.isConfigured || !settings.apiKey || !settings.endpoint || !settings.deploymentName) {
+      addDebugLog("Azure OpenAI is not configured properly");
+      throw new Error("Azure OpenAI is not configured properly");
+    }
+    
+    // Format messages for the API
+    const apiMessages = messages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+    
+    // Fix double slash issue in endpoint URL
+    const baseEndpoint = settings.endpoint.endsWith('/') 
+      ? settings.endpoint.slice(0, -1) 
+      : settings.endpoint;
+      
+    const apiUrl = `${baseEndpoint}/openai/deployments/${settings.deploymentName}/chat/completions?api-version=${settings.apiVersion}`;
+    
+    addDebugLog("Making streaming API request to", apiUrl);
+    
+    // Make the API call with stream: true
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': settings.apiKey
+      },
+      body: JSON.stringify({
+        messages: apiMessages,
+        max_completion_tokens: 800,
+        temperature: 1,
+        stream: true
+      })
+    });
+    
+    // Log response status
+    addDebugLog("API response status", `${response.status} ${response.statusText}`);
+    
+    // Check if the response is successful
+    if (!response.ok) {
+      const errorData = await response.text();
+      addDebugLog("Azure OpenAI API error", errorData);
+      throw new Error(`Azure OpenAI API error: ${response.status} ${errorData}`);
+    }
+    
+    // Process the stream
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error("Failed to get response reader");
+    }
+    
+    const decoder = new TextDecoder();
+    let buffer = '';
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      // Decode the chunk and add to buffer
+      buffer += decoder.decode(value, { stream: true });
+      
+      // Process complete lines in the buffer
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // Keep the last incomplete line in the buffer
+      
+      for (const line of lines) {
+        if (line.trim() === '') continue;
+        if (line.trim() === 'data: [DONE]') continue;
+        
+        try {
+          // Remove 'data: ' prefix if present
+          const jsonStr = line.startsWith('data: ') ? line.slice(6) : line;
+          const json = JSON.parse(jsonStr);
+          
+          // Extract content from the chunk
+          const content = json.choices[0]?.delta?.content || '';
+          if (content) {
+            onChunk(content);
+          }
+        } catch (e) {
+          addDebugLog("Error parsing stream chunk", e);
+          // Continue processing other chunks even if one fails
+        }
+      }
+    }
+    
+    addDebugLog("Stream completed");
+    
+  } catch (error) {
+    // Log and rethrow the error
+    addDebugLog("Error in streamAzureOpenAI", error instanceof Error ? error.message : String(error));
+    throw error;
+  }
+};
+
+// Keep the original non-streaming function for compatibility
 export const callAzureOpenAI = async (messages: ChatMessage[], settings: AzureOpenAISettings): Promise<string> => {
   try {
     // Log the call to Azure OpenAI
