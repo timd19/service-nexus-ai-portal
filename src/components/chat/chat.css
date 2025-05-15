@@ -1,0 +1,117 @@
+/* Chat component styles */
+
+.message-actions {
+  position: absolute;
+  top: -8px;
+  right: 50px;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+}
+
+.message-container:hover .message-actions {
+  opacity: 1;
+}
+
+.example-prompts-container {
+  animation: fadeIn 0.5s ease-in-out;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
+  margin-bottom: 8px;
+}
+
+.example-prompt-button {
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.example-prompt-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Improve message styling */
+.user-message-actions {
+  position: absolute;
+  top: -8px;
+  right: 50px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.user-message:hover .user-message-actions {
+  opacity: 1;
+}
+
+.action-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-button:hover {
+  background-color: #f5f5f5;
+  transform: translateY(-1px);
+}
+
+/* Streaming animation */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.typing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin: 0 2px;
+  background-color: #6366f1;
+  animation: typingAnimation 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingAnimation {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-5px);
+  }
+}
+

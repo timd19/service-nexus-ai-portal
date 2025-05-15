@@ -7,7 +7,9 @@ import ChatInput from "./ChatInput";
 import ChatMessage from "./ChatMessage";
 import ChatHistory from "./ChatHistory";
 import ChatControls from "./ChatControls";
+import ExamplePrompts from "./ExamplePrompts";
 import { useChatSessions, Message } from "@/hooks/useChatSessions";
+import "./chat.css";
 
 const AIChat = () => {
   const [input, setInput] = useState("");
@@ -45,14 +47,15 @@ const AIChat = () => {
     }
   }, [messages, streamingContent]);
 
-  const handleSendMessage = async () => {
-    if (!input.trim()) return;
+  // Function to handle sending a message and getting AI response
+  const handleSendMessage = async (messageContent = input) => {
+    if (!messageContent.trim()) return;
 
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       type: "user",
-      content: input,
+      content: messageContent,
       timestamp: new Date(),
     };
     
@@ -64,7 +67,10 @@ const AIChat = () => {
     setCompleteResponse("");
 
     try {
-      addDebugLog("AIChat: Sending message", input);
+      addDebugLog("AIChat: Sending message", messageContent);
+      
+      // Get all messages up to this point for context
+      const currentMessages = [...messages, userMessage];
       
       // Format messages for OpenAI API
       const apiMessages: ChatMessageType[] = [
@@ -72,17 +78,12 @@ const AIChat = () => {
           role: "system",
           content: "You are a service management AI assistant for Service Nexus, helping with managed service offerings lifecycle and operations. You have access to all documents, ideas, projects, and services in the platform."
         },
-        ...messages.map(msg => ({
+        ...currentMessages.map(msg => ({
           role: msg.type === "user" ? "user" : "assistant",
           content: msg.content,
           timestamp: msg.timestamp,
           contextSource: msg.contextSource
-        } as ChatMessageType)),
-        {
-          role: "user",
-          content: input,
-          timestamp: new Date()
-        }
+        } as ChatMessageType))
       ];
 
       // Create a temporary streaming message ID
@@ -144,7 +145,55 @@ const AIChat = () => {
     }
   };
 
+  // Handle example prompt selection
+  const handleExamplePromptSelect = (prompt: string) => {
+    setInput(prompt);
+    handleSendMessage(prompt);
+  };
+
+  // Handle message resend (regenerate AI response)
+  const handleResendMessage = (messageId: string) => {
+    // Find the message to resend
+    const messageIndex = messages.findIndex(msg => msg.id === messageId);
+    if (messageIndex === -1) return;
+    
+    // Get the message content
+    const messageToResend = messages[messageIndex];
+    
+    // Remove this message and all subsequent messages
+    const newMessages = messages.slice(0, messageIndex);
+    setMessages(newMessages);
+    
+    // Resend the message to get a new response
+    handleSendMessage(messageToResend.content);
+  };
+
+  // Handle message edit
+  const handleEditMessage = (messageId: string, newContent: string) => {
+    // Find the message to edit
+    const messageIndex = messages.findIndex(msg => msg.id === messageId);
+    if (messageIndex === -1) return;
+    
+    // Remove this message and all subsequent messages
+    const newMessages = messages.slice(0, messageIndex);
+    
+    // Add the edited message
+    const editedMessage: Message = {
+      ...messages[messageIndex],
+      content: newContent,
+      timestamp: new Date(),
+    };
+    
+    setMessages([...newMessages, editedMessage]);
+    
+    // Generate a new response based on the edited message
+    handleSendMessage(newContent);
+  };
+
   const toggleHistory = () => setShowHistory(!showHistory);
+
+  // Check if we should show example prompts (only when no messages except the initial one)
+  const showExamplePrompts = messages.length <= 1;
 
   return (
     <div className="flex flex-col h-full">
@@ -185,6 +234,8 @@ const AIChat = () => {
               content={message.content}
               timestamp={message.timestamp}
               contextSource={message.contextSource}
+              onResend={message.type === "user" ? handleResendMessage : undefined}
+              onEdit={message.type === "user" ? handleEditMessage : undefined}
             />
           ))}
           
@@ -217,11 +268,16 @@ const AIChat = () => {
         </div>
       </div>
       
+      {/* Example Prompts - only show when conversation is new */}
+      {showExamplePrompts && !isLoading && (
+        <ExamplePrompts onSelectPrompt={handleExamplePromptSelect} />
+      )}
+      
       {/* Input Area */}
       <ChatInput 
         input={input}
         setInput={setInput}
-        handleSendMessage={handleSendMessage}
+        handleSendMessage={() => handleSendMessage()}
         isLoading={isLoading}
         settings={settings}
       />
@@ -230,4 +286,3 @@ const AIChat = () => {
 };
 
 export default AIChat;
-
