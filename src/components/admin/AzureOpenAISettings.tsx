@@ -112,7 +112,7 @@ export const AzureOpenAISettings = () => {
                 <FormItem>
                   <FormLabel>API Version</FormLabel>
                   <FormControl>
-                    <Input placeholder="2023-05-15" {...field} />
+                    <Input placeholder="2025-01-01-preview" {...field} />
                   </FormControl>
                   <FormDescription>The Azure OpenAI API version to use</FormDescription>
                   <FormMessage />
