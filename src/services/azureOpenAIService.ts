@@ -71,7 +71,7 @@ export const streamAzureOpenAI = async (
       },
       body: JSON.stringify({
         messages: apiMessages,
-        max_completion_tokens: 800,
+        max_tokens: 4000, // Increase max tokens to handle longer responses
         temperature: 1,
         stream: true
       })
@@ -132,6 +132,12 @@ export const streamAzureOpenAI = async (
           else if (json.choices && json.choices[0] && json.choices[0].content !== undefined) {
             content = json.choices[0].content;
           }
+          // Handle empty delta objects (they might be part of the stream but don't contain content)
+          else if (json.choices && json.choices.length > 0 && Object.keys(json.choices[0].delta || {}).length === 0) {
+            // This is likely a metadata chunk, not actual content
+            addDebugLog("Received metadata chunk (no content)");
+            continue;
+          }
           
           if (content) {
             addDebugLog("Extracted content", content);
@@ -143,6 +149,34 @@ export const streamAzureOpenAI = async (
           // Continue processing other chunks even if one fails
         }
       }
+    }
+    
+    // Process any remaining content in the buffer
+    if (buffer.trim() !== '' && buffer.trim() !== 'data: [DONE]') {
+      try {
+        const jsonStr = buffer.startsWith('data: ') ? buffer.slice(6) : buffer;
+        const json = JSON.parse(jsonStr);
+        
+        let content = '';
+        if (json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content !== undefined) {
+          content = json.choices[0].delta.content;
+        } else if (json.choices && json.choices[0] && json.choices[0].content !== undefined) {
+          content = json.choices[0].content;
+        }
+        
+        if (content) {
+          addDebugLog("Extracted final content from buffer", content);
+          onChunk(content);
+        }
+      } catch (e) {
+        addDebugLog("Error parsing final buffer chunk", e);
+      }
+    }
+    
+    // Ensure we finish the decoder
+    const finalChunk = decoder.decode();
+    if (finalChunk) {
+      addDebugLog("Final decoder chunk", finalChunk);
     }
     
     addDebugLog("Stream completed");
@@ -197,7 +231,7 @@ export const callAzureOpenAI = async (messages: ChatMessage[], settings: AzureOp
       },
       body: JSON.stringify({
         messages: apiMessages,
-        max_completion_tokens: 800,
+        max_tokens: 4000, // Increase max tokens to handle longer responses
         temperature: 1
       })
     });
