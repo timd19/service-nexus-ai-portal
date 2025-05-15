@@ -64,3 +64,4 @@ const ChatMessage: FC<ChatMessageProps> = ({ id, type, content, timestamp, conte
 };
 
 export default ChatMessage;
+
