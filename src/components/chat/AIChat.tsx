@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useAzureOpenAI } from "@/contexts/AzureOpenAIContext";
 import { addDebugLog, streamAzureOpenAI } from "@/services/azureOpenAIService";
 import { useToast } from "@/hooks/use-toast";
@@ -48,7 +48,7 @@ const AIChat = () => {
   }, [messages, streamingContent]);
 
   // Function to handle sending a message and getting AI response
-  const handleSendMessage = async (messageContent = input) => {
+  const handleSendMessage = useCallback(async (messageContent = input) => {
     if (!messageContent.trim()) return;
 
     // Add user message
@@ -143,16 +143,16 @@ const AIChat = () => {
       setIsLoading(false);
       setIsStreaming(false);
     }
-  };
+  }, [input, messages, settings, toast, updateChatSessionWithMessages, setMessages, setStreamingContent, setCompleteResponse, setIsLoading, setIsStreaming]);
 
   // Handle example prompt selection
-  const handleExamplePromptSelect = (prompt: string) => {
+  const handleExamplePromptSelect = useCallback((prompt: string) => {
     setInput(prompt);
     handleSendMessage(prompt);
-  };
+  }, [setInput, handleSendMessage]);
 
   // Handle message resend (regenerate AI response)
-  const handleResendMessage = (messageId: string) => {
+  const handleResendMessage = useCallback((messageId: string) => {
     // Find the message to resend
     const messageIndex = messages.findIndex(msg => msg.id === messageId);
     if (messageIndex === -1) return;
@@ -168,11 +168,11 @@ const AIChat = () => {
     setTimeout(() => {
       // Resend the message to get a new response
       handleSendMessage(messageToResend.content);
-    }, 0);
-  };
+    }, 100);
+  }, [messages, setMessages, handleSendMessage]);
 
   // Handle message edit
-  const handleEditMessage = (messageId: string, newContent: string) => {
+  const handleEditMessage = useCallback((messageId: string, newContent: string) => {
     // Find the message to edit
     const messageIndex = messages.findIndex(msg => msg.id === messageId);
     if (messageIndex === -1) return;
@@ -193,8 +193,8 @@ const AIChat = () => {
     setTimeout(() => {
       // Generate a new response based on the edited message
       handleSendMessage(newContent);
-    }, 0);
-  };
+    }, 100);
+  }, [messages, setMessages, handleSendMessage]);
 
   const toggleHistory = () => setShowHistory(!showHistory);
 
