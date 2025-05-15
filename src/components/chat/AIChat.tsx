@@ -8,7 +8,6 @@ import ChatMessage from "./ChatMessage";
 import ChatHistory from "./ChatHistory";
 import ChatControls from "./ChatControls";
 import { useChatSessions, Message } from "@/hooks/useChatSessions";
-
 const AIChat = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -36,17 +35,14 @@ const AIChat = () => {
     updateChatSessionWithMessages,
     currentChatTitle
   } = useChatSessions();
-
   // Scroll to bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, streamingContent]);
-
   const handleSendMessage = async () => {
     if (!input.trim()) return;
-
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -60,7 +56,6 @@ const AIChat = () => {
     setIsLoading(true);
     setIsStreaming(true);
     setStreamingContent("");
-
     try {
       addDebugLog("AIChat: Sending message", input);
       
@@ -82,7 +77,6 @@ const AIChat = () => {
           timestamp: new Date()
         }
       ];
-
       // Create a temporary streaming message ID
       const streamingId = (Date.now() + 1).toString();
       
@@ -91,26 +85,29 @@ const AIChat = () => {
         apiMessages, 
         settings,
         (chunk) => {
+          addDebugLog("Received chunk", chunk);
           setStreamingContent(prev => prev + chunk);
         }
       );
       
       addDebugLog("AIChat: Streaming completed");
       
+      // Get the final content
+      const finalContent = streamingContent;
+      addDebugLog("Final content", finalContent);
+      
       // Create the final AI message with the complete streamed content
       const aiMessage: Message = {
         id: streamingId,
         type: "ai",
-        content: streamingContent,
+        content: finalContent || "I apologize, but I couldn't generate a response. Please try again.",
         timestamp: new Date(),
       };
       
       // Update messages state with properly typed messages
       setMessages((prev) => [...prev, aiMessage]);
-
       // Update chat sessions
       updateChatSessionWithMessages(userMessage, aiMessage);
-
     } catch (error) {
       addDebugLog("AIChat: Error in chat", error instanceof Error ? error.message : String(error));
       
@@ -119,7 +116,6 @@ const AIChat = () => {
         description: "Failed to get a response from AI assistant. Check your Azure OpenAI configuration.",
         variant: "destructive"
       });
-
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "ai",
@@ -133,9 +129,7 @@ const AIChat = () => {
       setIsStreaming(false);
     }
   };
-
   const toggleHistory = () => setShowHistory(!showHistory);
-
   return (
     <div className="flex flex-col h-full">
       {/* Chat Controls */}
@@ -189,7 +183,7 @@ const AIChat = () => {
             />
           )}
           
-          {isLoading && !isStreaming && (
+          {isLoading && !streamingContent && (
             <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 w-max rounded-lg p-4">
               <div className="h-8 w-8 mr-3 flex-shrink-0 bg-nexus-100 text-nexus-600 rounded-full flex items-center justify-center">
                 <span className="text-xs">AI</span>
@@ -218,6 +212,4 @@ const AIChat = () => {
     </div>
   );
 };
-
 export default AIChat;
-
