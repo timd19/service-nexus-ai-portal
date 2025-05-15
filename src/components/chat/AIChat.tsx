@@ -164,8 +164,11 @@ const AIChat = () => {
     const newMessages = messages.slice(0, messageIndex);
     setMessages(newMessages);
     
-    // Resend the message to get a new response
-    handleSendMessage(messageToResend.content);
+    // Wait a moment before resending to avoid state update conflicts
+    setTimeout(() => {
+      // Resend the message to get a new response
+      handleSendMessage(messageToResend.content);
+    }, 0);
   };
 
   // Handle message edit
@@ -186,8 +189,11 @@ const AIChat = () => {
     
     setMessages([...newMessages, editedMessage]);
     
-    // Generate a new response based on the edited message
-    handleSendMessage(newContent);
+    // Wait a moment before resending to avoid state update conflicts
+    setTimeout(() => {
+      // Generate a new response based on the edited message
+      handleSendMessage(newContent);
+    }, 0);
   };
 
   const toggleHistory = () => setShowHistory(!showHistory);
