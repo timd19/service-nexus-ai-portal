@@ -114,15 +114,32 @@ export const streamAzureOpenAI = async (
         try {
           // Remove 'data: ' prefix if present
           const jsonStr = line.startsWith('data: ') ? line.slice(6) : line;
+          
+          // Log the raw JSON string for debugging
+          addDebugLog("Stream chunk JSON", jsonStr);
+          
+          // Parse the JSON
           const json = JSON.parse(jsonStr);
           
-          // Extract content from the chunk
-          const content = json.choices[0]?.delta?.content || '';
+          // Extract content from the chunk - handle both delta.content and content formats
+          let content = '';
+          
+          // New format: json.choices[0]?.delta?.content
+          if (json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content !== undefined) {
+            content = json.choices[0].delta.content;
+          } 
+          // Alternative format: json.choices[0]?.content
+          else if (json.choices && json.choices[0] && json.choices[0].content !== undefined) {
+            content = json.choices[0].content;
+          }
+          
           if (content) {
+            addDebugLog("Extracted content", content);
             onChunk(content);
           }
         } catch (e) {
           addDebugLog("Error parsing stream chunk", e);
+          addDebugLog("Problematic line", line);
           // Continue processing other chunks even if one fails
         }
       }
@@ -268,3 +285,4 @@ export const checkAzureOpenAIHealth = async (settings: AzureOpenAISettings): Pro
     };
   }
 };
+
