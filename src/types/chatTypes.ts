@@ -13,3 +13,10 @@ export interface ChatSession {
   timestamp: Date;
   messages: ChatMessage[];
 }
+
+export interface IntegrationStatus {
+  name: string;
+  status: 'healthy' | 'error' | 'warning' | 'unknown';
+  lastChecked: Date;
+  message: string;
+}

@@ -1,10 +1,12 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bot, GitBranch, LayoutDashboard } from "lucide-react";
+import { Activity, Bot, GitBranch, LayoutDashboard, Monitor } from "lucide-react";
 import { AzureOpenAISettings } from "@/components/admin/AzureOpenAISettings";
 import { ServiceNowSettings } from "@/components/admin/ServiceNowSettings";
 import { GitHubSettings } from "@/components/admin/GitHubSettings";
+import DebugConsole from "@/components/admin/DebugConsole";
+import SystemStatus from "@/components/admin/SystemStatus";
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState("azure-openai");
@@ -20,8 +22,10 @@ const AdminPage = () => {
         </div>
       </div>
 
+      <SystemStatus />
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="azure-openai">
             <Bot className="mr-2 h-4 w-4" />
             Azure OpenAI
@@ -33,6 +37,10 @@ const AdminPage = () => {
           <TabsTrigger value="github">
             <GitBranch className="mr-2 h-4 w-4" />
             GitHub
+          </TabsTrigger>
+          <TabsTrigger value="debug">
+            <Monitor className="mr-2 h-4 w-4" />
+            Debug Console
           </TabsTrigger>
         </TabsList>
 
@@ -46,6 +54,10 @@ const AdminPage = () => {
 
         <TabsContent value="github" className="space-y-4 mt-4">
           <GitHubSettings />
+        </TabsContent>
+        
+        <TabsContent value="debug" className="space-y-4 mt-4">
+          <DebugConsole />
         </TabsContent>
       </Tabs>
     </div>

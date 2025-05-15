@@ -26,8 +26,8 @@ function App() {
               <Route path="/services" element={<ServicesPage />} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/chat" element={<ChatbotPage />} />
-              <Route path="/ai" element={<ChatbotPage />} />
               <Route path="/chatbot" element={<ChatbotPage />} />
+              <Route path="/ai" element={<ChatbotPage />} />
               <Route path="/documents" element={<DocumentGeneratorPage />} />
               <Route path="/ideas" element={<IdeaGeneratorPage />} />
               <Route path="/projects" element={<ProjectsPage />} />

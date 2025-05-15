@@ -1,40 +1,128 @@
-
 import { ChatMessage } from "@/types/chatTypes";
 import { AzureOpenAISettings } from "@/contexts/AzureOpenAIContext";
 
-export const callAzureOpenAI = async (messages: ChatMessage[], settings: AzureOpenAISettings): Promise<string> => {
-  // This is a mock implementation for the UI demo
-  // In a real implementation, you would call the Azure OpenAI API
+// Debug logs for Azure OpenAI service
+let debugLogs: string[] = [];
+
+// Function to add debug logs with timestamps
+export const addDebugLog = (message: string, data?: any): void => {
+  const timestamp = new Date().toISOString();
+  const logEntry = `${timestamp} - ${message}${data ? `: ${JSON.stringify(data)}` : ''}`;
+  debugLogs.push(logEntry);
+  console.log(logEntry);
   
-  console.log("Calling Azure OpenAI with settings:", settings);
-  console.log("Messages:", messages);
-  
-  // Wait for 1-2 seconds to simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
-  
-  // For demo purposes, return a mock response
-  const lastMessage = messages[messages.length - 1];
-  
-  if (!settings.isConfigured || !settings.apiKey || !settings.endpoint || !settings.deploymentName) {
-    throw new Error("Azure OpenAI is not configured properly");
+  // Keep only the last 100 logs
+  if (debugLogs.length > 100) {
+    debugLogs = debugLogs.slice(-100);
   }
-  
-  // Return different responses based on the type of message
-  if (lastMessage.content.toLowerCase().includes("hello") || lastMessage.content.toLowerCase().includes("hi")) {
-    return "Hello! I'm your AI assistant powered by Azure OpenAI. How can I help you today?";
-  } else if (lastMessage.content.toLowerCase().includes("service") || lastMessage.content.toLowerCase().includes("management")) {
-    return "I can help you with service management questions. Would you like information about monitoring, deployment, or maintenance?";
-  } else if (lastMessage.content.toLowerCase().includes("generate")) {
-    if (messages[0].role === "system" && messages[0].content.includes("JSON")) {
-      return `{
-        "title": "Automated Cloud Security Audit Service",
-        "description": "A continuous security monitoring service that automatically audits client cloud environments, identifies vulnerabilities, and provides remediation recommendations.",
-        "category": "Security"
-      }`;
-    } else {
-      return "Here's some generated content for your document: \n\n## Security Best Practices\n\n1. Implement multi-factor authentication\n2. Use principle of least privilege\n3. Regular security audits\n4. Encrypt sensitive data\n5. Maintain security patches";
+};
+
+// Function to get all debug logs
+export const getDebugLogs = (): string[] => {
+  return [...debugLogs];
+};
+
+// Function to clear debug logs
+export const clearDebugLogs = (): void => {
+  debugLogs = [];
+};
+
+export const callAzureOpenAI = async (messages: ChatMessage[], settings: AzureOpenAISettings): Promise<string> => {
+  try {
+    // Log the call to Azure OpenAI
+    addDebugLog("Calling Azure OpenAI with settings", {
+      endpoint: settings.endpoint,
+      deploymentName: settings.deploymentName,
+      apiVersion: settings.apiVersion,
+      isConfigured: settings.isConfigured
+    });
+    
+    addDebugLog("Messages", messages);
+    
+    // Check if Azure OpenAI is properly configured
+    if (!settings.isConfigured || !settings.apiKey || !settings.endpoint || !settings.deploymentName) {
+      addDebugLog("Azure OpenAI is not configured properly");
+      throw new Error("Azure OpenAI is not configured properly");
     }
-  } else {
-    return "I understand your message. Is there something specific about service management I can help you with? I can provide information on best practices, troubleshooting, or implementation strategies.";
+    
+    // Format messages for the API
+    const apiMessages = messages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+    
+    // Make the actual API call to Azure OpenAI
+    const response = await fetch(`${settings.endpoint}/openai/deployments/${settings.deploymentName}/chat/completions?api-version=${settings.apiVersion}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': settings.apiKey
+      },
+      body: JSON.stringify({
+        messages: apiMessages,
+        max_tokens: 800,
+        temperature: 0.7
+      })
+    });
+    
+    // Check if the response is successful
+    if (!response.ok) {
+      const errorData = await response.text();
+      addDebugLog("Azure OpenAI API error", errorData);
+      throw new Error(`Azure OpenAI API error: ${response.status} ${errorData}`);
+    }
+    
+    // Parse the response
+    const data = await response.json();
+    addDebugLog("Azure OpenAI response received", { responseStatus: response.status });
+    
+    // Extract the content from the response
+    const content = data.choices[0].message.content;
+    return content;
+    
+  } catch (error) {
+    // Log and rethrow the error
+    addDebugLog("Error in callAzureOpenAI", error);
+    throw error;
+  }
+};
+
+// Simple health check function to verify API connection
+export const checkAzureOpenAIHealth = async (settings: AzureOpenAISettings): Promise<{ 
+  status: 'healthy' | 'error',
+  message: string 
+}> => {
+  try {
+    if (!settings.isConfigured || !settings.apiKey || !settings.endpoint || !settings.deploymentName) {
+      return { 
+        status: 'error', 
+        message: 'Azure OpenAI is not configured' 
+      };
+    }
+
+    // Make a simple API call to check the connection
+    const response = await fetch(`${settings.endpoint}/openai/deployments?api-version=${settings.apiVersion}`, {
+      method: 'GET',
+      headers: {
+        'api-key': settings.apiKey
+      }
+    });
+    
+    if (!response.ok) {
+      return { 
+        status: 'error', 
+        message: `Failed to connect: ${response.status} ${response.statusText}` 
+      };
+    }
+    
+    return { 
+      status: 'healthy', 
+      message: 'Connected to Azure OpenAI successfully' 
+    };
+  } catch (error) {
+    return { 
+      status: 'error', 
+      message: `Error connecting to Azure OpenAI: ${error instanceof Error ? error.message : String(error)}` 
+    };
   }
 };

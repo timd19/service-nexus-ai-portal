@@ -1,4 +1,3 @@
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +12,7 @@ import { Dropdown, DropdownTrigger, DropdownContent, DropdownItem } from "@/comp
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+// Define Message type using the role values from ChatMessage
 type Message = {
   id: string;
   type: "user" | "ai";
@@ -85,7 +85,7 @@ const AIChat = () => {
       setMessages(initialMessages);
     }
   }, [activeChatId, chatSessions]);
-
+  
   // Create a new chat session
   const createNewChat = () => {
     const newId = Date.now().toString();
@@ -162,7 +162,7 @@ const AIChat = () => {
           content: msg.content,
           timestamp: msg.timestamp,
           contextSource: msg.contextSource
-        })),
+        } as ChatMessage)),
         {
           role: "user",
           content: input,
@@ -180,14 +180,13 @@ const AIChat = () => {
       };
       
       // Update messages state
-      const updatedMessages = [...messages, userMessage, aiMessage];
-      setMessages(updatedMessages);
+      setMessages([...messages, userMessage, aiMessage]);
 
       // Update chat sessions
       setChatSessions(prev => prev.map(session => {
         if (session.id === activeChatId) {
           // Convert local messages to ChatMessage format for storage
-          const sessionMessages: ChatMessage[] = updatedMessages.map(m => ({
+          const sessionMessages: ChatMessage[] = [...messages, userMessage, aiMessage].map(m => ({
             role: m.type === "user" ? "user" : "assistant",
             content: m.content,
             timestamp: m.timestamp,
