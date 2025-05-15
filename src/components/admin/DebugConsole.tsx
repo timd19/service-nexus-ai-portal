@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getDebugLogs, clearDebugLogs } from "@/services/azureOpenAIService";
+import { getDebugLogs, clearDebugLogs, addDebugLog } from "@/services/azureOpenAIService";
 
 export const DebugConsole = () => {
   const [logs, setLogs] = useState<string[]>([]);
@@ -11,24 +11,41 @@ export const DebugConsole = () => {
 
   // Function to refresh logs
   const refreshLogs = () => {
-    setLogs(getDebugLogs());
+    const currentLogs = getDebugLogs();
+    setLogs(currentLogs);
+    
+    // If no logs are available, add an informational log
+    if (currentLogs.length === 0) {
+      addDebugLog("Debug console initialized. Waiting for API events...");
+      setLogs(getDebugLogs());
+    }
   };
 
   // Clear all logs
   const handleClearLogs = () => {
     clearDebugLogs();
+    addDebugLog("Logs cleared");
     refreshLogs();
   };
 
   // Auto refresh logs every 2 seconds if enabled
   useEffect(() => {
+    refreshLogs(); // Initial refresh
+    
     if (!autoRefresh) return;
     
-    refreshLogs();
     const interval = setInterval(refreshLogs, 2000);
     
     return () => clearInterval(interval);
   }, [autoRefresh]);
+
+  // Scroll to bottom when logs change
+  useEffect(() => {
+    const scrollArea = document.querySelector('.debug-logs-scroll-area');
+    if (scrollArea) {
+      scrollArea.scrollTop = scrollArea.scrollHeight;
+    }
+  }, [logs]);
 
   return (
     <Card>
@@ -64,9 +81,9 @@ export const DebugConsole = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[400px] rounded border bg-slate-950 p-4 text-sm text-slate-50 font-mono">
+        <ScrollArea className="h-[400px] rounded border bg-slate-950 p-4 text-sm text-slate-50 font-mono debug-logs-scroll-area">
           {logs.length === 0 ? (
-            <div className="text-gray-400 italic">No logs available</div>
+            <div className="text-gray-400 italic">No logs available. Actions with Azure OpenAI will appear here.</div>
           ) : (
             logs.map((log, index) => (
               <div key={index} className="mb-1 whitespace-pre-wrap break-all">

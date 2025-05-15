@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { Bot, Clock, MessageSquare, Plus, Save, SendIcon, User, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAzureOpenAI } from "@/contexts/AzureOpenAIContext";
-import { callAzureOpenAI } from "@/services/azureOpenAIService";
+import { callAzureOpenAI, addDebugLog } from "@/services/azureOpenAIService";
 import { useToast } from "@/components/ui/use-toast";
 import { ChatMessage, ChatSession } from "@/types/chatTypes";
 import { Dropdown, DropdownTrigger, DropdownContent, DropdownItem } from "@/components/ui/dropdown-menu";
@@ -74,7 +74,7 @@ const AIChat = () => {
       // Convert session messages to the local Message format
       const loadedMessages = activeSession.messages.map(m => ({
         id: m.timestamp ? new Date(m.timestamp).getTime().toString() : Date.now().toString(),
-        type: m.role === "user" ? "user" : "ai",
+        type: m.role === "user" ? "user" as const : "ai" as const,
         content: m.content,
         timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
         contextSource: m.contextSource
@@ -151,6 +151,8 @@ const AIChat = () => {
     setIsLoading(true);
 
     try {
+      addDebugLog("AIChat: Sending message", input);
+      
       // Format messages for OpenAI API
       const apiMessages: ChatMessage[] = [
         {
@@ -171,6 +173,7 @@ const AIChat = () => {
       ];
 
       const response = await callAzureOpenAI(apiMessages, settings);
+      addDebugLog("AIChat: Received response", response);
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -179,14 +182,15 @@ const AIChat = () => {
         timestamp: new Date(),
       };
       
-      // Update messages state
-      setMessages([...messages, userMessage, aiMessage]);
+      // Update messages state with properly typed messages
+      setMessages((prev) => [...prev, aiMessage]);
 
       // Update chat sessions
       setChatSessions(prev => prev.map(session => {
         if (session.id === activeChatId) {
           // Convert local messages to ChatMessage format for storage
-          const sessionMessages: ChatMessage[] = [...messages, userMessage, aiMessage].map(m => ({
+          const updatedMessages = [...messages, userMessage, aiMessage];
+          const sessionMessages: ChatMessage[] = updatedMessages.map(m => ({
             role: m.type === "user" ? "user" : "assistant",
             content: m.content,
             timestamp: m.timestamp,
@@ -204,7 +208,8 @@ const AIChat = () => {
       }));
 
     } catch (error) {
-      console.error("Error in AI chat:", error);
+      addDebugLog("AIChat: Error in chat", error instanceof Error ? error.message : String(error));
+      
       toast({
         title: "Error",
         description: "Failed to get a response from AI assistant. Check your Azure OpenAI configuration.",

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Activity, Bot, GitBranch, LayoutDashboard, Monitor } from "lucide-react";
 import { AzureOpenAISettings } from "@/components/admin/AzureOpenAISettings";
@@ -7,9 +7,18 @@ import { ServiceNowSettings } from "@/components/admin/ServiceNowSettings";
 import { GitHubSettings } from "@/components/admin/GitHubSettings";
 import DebugConsole from "@/components/admin/DebugConsole";
 import SystemStatus from "@/components/admin/SystemStatus";
+import { addDebugLog } from "@/services/azureOpenAIService";
+import { useAzureOpenAI } from "@/contexts/AzureOpenAIContext";
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState("azure-openai");
+  const { settings } = useAzureOpenAI();
+
+  // Log settings on page load for debugging
+  useEffect(() => {
+    addDebugLog("Admin page opened");
+    addDebugLog("Azure OpenAI Settings", settings);
+  }, [settings]);
 
   return (
     <div className="space-y-6">

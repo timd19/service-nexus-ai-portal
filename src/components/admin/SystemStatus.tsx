@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, CheckCircle2, Monitor, RotateCcw } from "lucide-react";
 import { useAzureOpenAI } from "@/contexts/AzureOpenAIContext";
 import { IntegrationStatus } from "@/types/chatTypes";
-import { checkAzureOpenAIHealth } from "@/services/azureOpenAIService";
+import { checkAzureOpenAIHealth, addDebugLog } from "@/services/azureOpenAIService";
 
 export const SystemStatus = () => {
   const { settings } = useAzureOpenAI();
@@ -24,8 +24,12 @@ export const SystemStatus = () => {
     setIsRefreshing(true);
     
     try {
+      addDebugLog("Checking integration status");
+      
       // Check Azure OpenAI status
       const azureStatus = await checkAzureOpenAIHealth(settings);
+      
+      addDebugLog(`Azure OpenAI status: ${azureStatus.status}`, azureStatus.message);
       
       setIntegrationStatus([
         {
@@ -36,6 +40,7 @@ export const SystemStatus = () => {
         }
       ]);
     } catch (error) {
+      addDebugLog("Error checking integration status", error instanceof Error ? error.message : String(error));
       console.error("Error checking integration status:", error);
     } finally {
       setIsRefreshing(false);

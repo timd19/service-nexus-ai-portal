@@ -1,3 +1,4 @@
+
 import { ChatMessage } from "@/types/chatTypes";
 import { AzureOpenAISettings } from "@/contexts/AzureOpenAIContext";
 
@@ -7,7 +8,7 @@ let debugLogs: string[] = [];
 // Function to add debug logs with timestamps
 export const addDebugLog = (message: string, data?: any): void => {
   const timestamp = new Date().toISOString();
-  const logEntry = `${timestamp} - ${message}${data ? `: ${JSON.stringify(data)}` : ''}`;
+  const logEntry = `${timestamp} - ${message}${data ? ': ' + (typeof data === 'string' ? data : JSON.stringify(data, null, 2)) : ''}`;
   debugLogs.push(logEntry);
   console.log(logEntry);
   
@@ -51,8 +52,17 @@ export const callAzureOpenAI = async (messages: ChatMessage[], settings: AzureOp
       content: msg.content
     }));
     
+    // Fix double slash issue in endpoint URL
+    const baseEndpoint = settings.endpoint.endsWith('/') 
+      ? settings.endpoint.slice(0, -1) 
+      : settings.endpoint;
+      
+    const apiUrl = `${baseEndpoint}/openai/deployments/${settings.deploymentName}/chat/completions?api-version=${settings.apiVersion}`;
+    
+    addDebugLog("Making API request to", apiUrl);
+    
     // Make the actual API call to Azure OpenAI
-    const response = await fetch(`${settings.endpoint}/openai/deployments/${settings.deploymentName}/chat/completions?api-version=${settings.apiVersion}`, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -64,6 +74,9 @@ export const callAzureOpenAI = async (messages: ChatMessage[], settings: AzureOp
         temperature: 0.7
       })
     });
+    
+    // Log response status
+    addDebugLog("API response status", `${response.status} ${response.statusText}`);
     
     // Check if the response is successful
     if (!response.ok) {
@@ -82,7 +95,7 @@ export const callAzureOpenAI = async (messages: ChatMessage[], settings: AzureOp
     
   } catch (error) {
     // Log and rethrow the error
-    addDebugLog("Error in callAzureOpenAI", error);
+    addDebugLog("Error in callAzureOpenAI", error instanceof Error ? error.message : String(error));
     throw error;
   }
 };
@@ -93,20 +106,37 @@ export const checkAzureOpenAIHealth = async (settings: AzureOpenAISettings): Pro
   message: string 
 }> => {
   try {
+    addDebugLog("Checking Azure OpenAI health");
+    
     if (!settings.isConfigured || !settings.apiKey || !settings.endpoint || !settings.deploymentName) {
+      addDebugLog("Azure OpenAI is not configured");
       return { 
         status: 'error', 
         message: 'Azure OpenAI is not configured' 
       };
     }
 
+    // Fix double slash issue in endpoint URL
+    const baseEndpoint = settings.endpoint.endsWith('/') 
+      ? settings.endpoint.slice(0, -1) 
+      : settings.endpoint;
+    
+    const apiUrl = `${baseEndpoint}/openai/deployments?api-version=${settings.apiVersion}`;
+    
+    addDebugLog("Health check API request to", apiUrl);
+    
     // Make a simple API call to check the connection
-    const response = await fetch(`${settings.endpoint}/openai/deployments?api-version=${settings.apiVersion}`, {
+    const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
         'api-key': settings.apiKey
       }
     });
+    
+    addDebugLog("Health check response status", `${response.status} ${response.statusText}`);
+    
+    const responseBody = await response.text();
+    addDebugLog("Health check response body", responseBody);
     
     if (!response.ok) {
       return { 
@@ -120,9 +150,11 @@ export const checkAzureOpenAIHealth = async (settings: AzureOpenAISettings): Pro
       message: 'Connected to Azure OpenAI successfully' 
     };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    addDebugLog("Error in health check", errorMessage);
     return { 
       status: 'error', 
-      message: `Error connecting to Azure OpenAI: ${error instanceof Error ? error.message : String(error)}` 
+      message: `Error connecting to Azure OpenAI: ${errorMessage}` 
     };
   }
 };
