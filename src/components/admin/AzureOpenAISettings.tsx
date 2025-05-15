@@ -25,9 +25,9 @@ export const AzureOpenAISettings = () => {
     resolver: zodResolver(azureOpenAISchema),
     defaultValues: {
       apiKey: azureSettings.apiKey || "",
-      endpoint: azureSettings.endpoint || "https://",
-      deploymentName: azureSettings.deploymentName || "",
-      apiVersion: azureSettings.apiVersion || "2023-05-15"
+      endpoint: azureSettings.endpoint || "https://tday-m9y8tx1o-eastus2.openai.azure.com/",
+      deploymentName: azureSettings.deploymentName || "o4-mini",
+      apiVersion: azureSettings.apiVersion || "2025-01-01-preview"
     }
   });
 
