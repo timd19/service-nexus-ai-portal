@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useAzureOpenAI } from "@/contexts/AzureOpenAIContext";
-import { callAzureOpenAI, addDebugLog, streamAzureOpenAI } from "@/services/azureOpenAIService";
+import { callAzureOpenAI, addDebugLog } from "@/services/azureOpenAIService";
 import { useToast } from "@/hooks/use-toast";
-import { ChatMessage } from "@/types/chatTypes";
+import { ChatMessage as ChatMessageType } from "@/types/chatTypes";
 import ChatInput from "./ChatInput";
 import ChatMessage from "./ChatMessage";
 import ChatHistory from "./ChatHistory";
@@ -14,11 +14,6 @@ const AIChat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { settings } = useAzureOpenAI();
   const { toast } = useToast();
-  
-  // Add state for streaming response
-  const [streamingContent, setStreamingContent] = useState("");
-  const [isStreaming, setIsStreaming] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const {
     messages,
@@ -37,13 +32,6 @@ const AIChat = () => {
     currentChatTitle
   } = useChatSessions();
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages, streamingContent]);
-
   const handleSendMessage = async () => {
     if (!input.trim()) return;
 
@@ -58,14 +46,12 @@ const AIChat = () => {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
-    setIsStreaming(true);
-    setStreamingContent("");
 
     try {
       addDebugLog("AIChat: Sending message", input);
       
       // Format messages for OpenAI API
-      const apiMessages: ChatMessage[] = [
+      const apiMessages: ChatMessageType[] = [
         {
           role: "system",
           content: "You are a service management AI assistant for Service Nexus, helping with managed service offerings lifecycle and operations. You have access to all documents, ideas, projects, and services in the platform."
@@ -75,7 +61,7 @@ const AIChat = () => {
           content: msg.content,
           timestamp: msg.timestamp,
           contextSource: msg.contextSource
-        } as ChatMessage)),
+        } as ChatMessageType)),
         {
           role: "user",
           content: input,
@@ -83,25 +69,13 @@ const AIChat = () => {
         }
       ];
 
-      // Create a temporary streaming message ID
-      const streamingId = (Date.now() + 1).toString();
+      const response = await callAzureOpenAI(apiMessages, settings);
+      addDebugLog("AIChat: Received response", response);
       
-      // Use streaming API
-      await streamAzureOpenAI(
-        apiMessages, 
-        settings,
-        (chunk) => {
-          setStreamingContent(prev => prev + chunk);
-        }
-      );
-      
-      addDebugLog("AIChat: Streaming completed");
-      
-      // Create the final AI message with the complete streamed content
       const aiMessage: Message = {
-        id: streamingId,
+        id: (Date.now() + 1).toString(),
         type: "ai",
-        content: streamingContent,
+        content: response,
         timestamp: new Date(),
       };
       
@@ -130,8 +104,6 @@ const AIChat = () => {
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
-      setIsStreaming(false);
-      setStreamingContent("");
     }
   };
 
@@ -179,18 +151,7 @@ const AIChat = () => {
             />
           ))}
           
-          {/* Streaming message */}
-          {isStreaming && streamingContent && (
-            <ChatMessage
-              key="streaming"
-              id="streaming"
-              type="ai"
-              content={streamingContent}
-              timestamp={new Date()}
-            />
-          )}
-          
-          {isLoading && !isStreaming && (
+          {isLoading && (
             <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 w-max rounded-lg p-4">
               <div className="h-8 w-8 mr-3 flex-shrink-0 bg-nexus-100 text-nexus-600 rounded-full flex items-center justify-center">
                 <span className="text-xs">AI</span>
@@ -202,9 +163,6 @@ const AIChat = () => {
               </div>
             </div>
           )}
-          
-          {/* Invisible div for scrolling to bottom */}
-          <div ref={messagesEndRef} />
         </div>
       </div>
       
@@ -221,3 +179,4 @@ const AIChat = () => {
 };
 
 export default AIChat;
+
