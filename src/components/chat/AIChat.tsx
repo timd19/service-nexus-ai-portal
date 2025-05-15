@@ -91,17 +91,22 @@ const AIChat = () => {
         apiMessages, 
         settings,
         (chunk) => {
+          addDebugLog("Received chunk", chunk);
           setStreamingContent(prev => prev + chunk);
         }
       );
       
       addDebugLog("AIChat: Streaming completed");
       
+      // Get the final content
+      const finalContent = streamingContent;
+      addDebugLog("Final content", finalContent);
+      
       // Create the final AI message with the complete streamed content
       const aiMessage: Message = {
         id: streamingId,
         type: "ai",
-        content: streamingContent,
+        content: finalContent || "I apologize, but I couldn't generate a response. Please try again.",
         timestamp: new Date(),
       };
       
@@ -189,7 +194,7 @@ const AIChat = () => {
             />
           )}
           
-          {isLoading && !isStreaming && (
+          {isLoading && !streamingContent && (
             <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 w-max rounded-lg p-4">
               <div className="h-8 w-8 mr-3 flex-shrink-0 bg-nexus-100 text-nexus-600 rounded-full flex items-center justify-center">
                 <span className="text-xs">AI</span>
