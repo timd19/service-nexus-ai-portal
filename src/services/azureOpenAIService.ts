@@ -71,7 +71,7 @@ export const streamAzureOpenAI = async (
       },
       body: JSON.stringify({
         messages: apiMessages,
-        max_tokens: 4000, // Increase max tokens to handle longer responses
+        max_completion_tokens: 4000, // Increase max tokens to handle longer responses
         temperature: 1,
         stream: true
       })
@@ -231,7 +231,7 @@ export const callAzureOpenAI = async (messages: ChatMessage[], settings: AzureOp
       },
       body: JSON.stringify({
         messages: apiMessages,
-        max_tokens: 4000, // Increase max tokens to handle longer responses
+        max_completion_tokens: 4000, // Increase max tokens to handle longer responses
         temperature: 1
       })
     });
