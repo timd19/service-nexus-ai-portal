@@ -10,7 +10,7 @@ const ChatbotPage = () => {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">AI Assistant</h1>
         <p className="text-muted-foreground">
-          Get help and insights about your services from our AI assistant
+          Get help and insights about everything across your platform from our AI assistant
         </p>
       </div>
 
@@ -23,7 +23,7 @@ const ChatbotPage = () => {
                 Service Nexus Assistant
               </CardTitle>
               <CardDescription>
-                Powered by Azure OpenAI
+                Powered by Azure OpenAI - Capable of cross-platform knowledge integration
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0 h-[calc(100%-5rem)]">
@@ -42,19 +42,19 @@ const ChatbotPage = () => {
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-nexus-500"></div>
+                    <span>Cross-platform knowledge integration</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-nexus-500"></div>
+                    <span>Save and load conversation history</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-nexus-500"></div>
                     <span>Service management insights</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-nexus-500"></div>
                     <span>Infrastructure recommendations</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-nexus-500"></div>
-                    <span>Troubleshooting assistance</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-nexus-500"></div>
-                    <span>Client communication drafts</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-nexus-500"></div>
@@ -70,16 +70,16 @@ const ChatbotPage = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button variant="outline" className="w-full justify-start text-sm h-auto py-2 font-normal">
-                  Summarize the health of all services
+                  Summarize insights from all my ideas
                 </Button>
                 <Button variant="outline" className="w-full justify-start text-sm h-auto py-2 font-normal">
-                  Draft an update email for client X
+                  Draft a project proposal based on my docs
                 </Button>
                 <Button variant="outline" className="w-full justify-start text-sm h-auto py-2 font-normal">
-                  Generate documentation for service Y
+                  Find similar items across all my content
                 </Button>
                 <Button variant="outline" className="w-full justify-start text-sm h-auto py-2 font-normal">
-                  Explain the latest service outage
+                  Generate an implementation plan
                 </Button>
               </CardContent>
             </Card>
@@ -91,16 +91,16 @@ const ChatbotPage = () => {
                   <h3 className="font-medium">Implementation Note</h3>
                 </div>
                 <p className="text-sm text-gray-600">
-                  This is a mock UI. In a real implementation, you'll need to:
+                  This is a comprehensive AI assistant with cross-platform awareness. In a production environment, you should:
                 </p>
                 <ul className="text-sm text-gray-600 list-disc pl-5 mt-2 space-y-1">
-                  <li>Configure a .env file with Azure OpenAI credentials</li>
-                  <li>Connect the FastAPI backend to Azure OpenAI service</li>
-                  <li>Implement secure API endpoints</li>
+                  <li>Configure Azure OpenAI credentials</li>
+                  <li>Implement document embedding for context</li>
+                  <li>Set up proper RAG pipelines for knowledge retrieval</li>
                 </ul>
                 <Button className="w-full mt-3 bg-nexus-500 hover:bg-nexus-600">
                   <FileCode className="mr-2 h-4 w-4" />
-                  View Implementation Docs
+                  View Configuration Docs
                 </Button>
               </CardContent>
             </Card>
