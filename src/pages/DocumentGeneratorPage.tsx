@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { FileText, Send, Plus, Save, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,9 +15,8 @@ import { Bot, User } from "lucide-react";
 import { useAzureOpenAI } from "@/contexts/AzureOpenAIContext";
 import { callAzureOpenAI } from "@/services/azureOpenAIService";
 import { ChatMessage as ApiChatMessage } from "@/types/chatTypes";
-import { Document, ChatMessage } from "@/types/documentTypes";
 
-interface Document {
+interface DocumentType {
   id: number;
   title: string;
   content: string;
@@ -24,7 +24,7 @@ interface Document {
   updatedAt: Date;
 }
 
-interface ChatMessage {
+interface DocChatMessage {
   id: string;
   content: string;
   sender: "user" | "ai";
@@ -33,7 +33,7 @@ interface ChatMessage {
 }
 
 const DocumentGeneratorPage = () => {
-  const [documents, setDocuments] = useState<Document[]>([
+  const [documents, setDocuments] = useState<DocumentType[]>([
     {
       id: 1,
       title: "Cloud Security Best Practices",
@@ -42,19 +42,19 @@ const DocumentGeneratorPage = () => {
       updatedAt: new Date(2025, 4, 2)
     }
   ]);
-  const [activeDocument, setActiveDocument] = useState<Document | null>(null);
+  const [activeDocument, setActiveDocument] = useState<DocumentType | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [prompt, setPrompt] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatMessages, setChatMessages] = useState<DocChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState<string | null>(null);
   const { toast } = useToast();
   const { settings } = useAzureOpenAI();
   
   const handleNewDocument = () => {
-    const newDoc: Document = {
+    const newDoc: DocumentType = {
       id: documents.length + 1,
       title: newTitle || "Untitled Document",
       content: "",
@@ -158,7 +158,7 @@ const DocumentGeneratorPage = () => {
       return;
     }
 
-    const userMessage: ChatMessage = {
+    const userMessage: DocChatMessage = {
       id: Date.now().toString(),
       content: chatMessage,
       sender: "user",
@@ -196,7 +196,7 @@ const DocumentGeneratorPage = () => {
         suggestionsPart = `# Suggested Improvements for ${activeDocument.title}\n\n${match[1].trim()}`;
       }
       
-      const aiResponse: ChatMessage = {
+      const aiResponse: DocChatMessage = {
         id: (Date.now() + 1).toString(),
         content: conversationalPart || response,
         sender: "ai",
@@ -210,7 +210,7 @@ const DocumentGeneratorPage = () => {
     } catch (error) {
       console.error("Error in document chat:", error);
       
-      const errorMessage: ChatMessage = {
+      const errorMessage: DocChatMessage = {
         id: (Date.now() + 1).toString(),
         content: "I'm having trouble connecting to the AI service. Please check your Azure OpenAI configuration in the Admin settings.",
         sender: "ai",
