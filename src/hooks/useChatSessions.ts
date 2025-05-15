@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { ChatMessage, ChatSession } from "@/types/chatTypes";
 import { useToast } from "@/hooks/use-toast";
@@ -147,6 +146,42 @@ export const useChatSessions = () => {
     }));
   };
 
+  // Update chat sessions with current messages (for edits and resends)
+  const updateChatSessionMessages = () => {
+    setChatSessions(prev => prev.map(session => {
+      if (session.id === activeChatId) {
+        // Convert local messages to ChatMessage format for storage
+        const sessionMessages: ChatMessage[] = messages.map(m => ({
+          role: m.type === "user" ? "user" : "assistant",
+          content: m.content,
+          timestamp: m.timestamp,
+          contextSource: m.contextSource
+        }));
+
+        // Get the last user message for the preview if available
+        const lastUserMessage = [...messages].reverse().find(m => m.type === "user");
+        const lastMessagePreview = lastUserMessage 
+          ? lastUserMessage.content.slice(0, 50) + (lastUserMessage.content.length > 50 ? "..." : "")
+          : "New conversation";
+
+        return {
+          ...session,
+          lastMessage: lastMessagePreview,
+          timestamp: new Date(),
+          messages: sessionMessages
+        };
+      }
+      return session;
+    }));
+  };
+
+  // Update chat sessions whenever messages change
+  useEffect(() => {
+    if (messages.length > 1) { // Only update if we have more than just the initial message
+      updateChatSessionMessages();
+    }
+  }, [messages]);
+
   return {
     chatSessions,
     activeChatId,
@@ -164,3 +199,4 @@ export const useChatSessions = () => {
     currentChatTitle: chatSessions.find(s => s.id === activeChatId)?.title || "New Conversation"
   };
 };
+
